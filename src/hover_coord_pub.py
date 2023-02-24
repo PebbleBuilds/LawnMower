@@ -9,8 +9,8 @@ HOVER_COORD = [0, 0, 1.5, 0] # x, y, z, yaw
 PUB_RATE = 10 # Hz
 
 def hover_coord_pub():
-    pub = rospy.Publisher('chatter', PoseStamped, queue_size=10)
-    rospy.init_node('talker', anonymous=True)
+    pub = rospy.Publisher('waypoint', PoseStamped, queue_size=10)
+    rospy.init_node('hover_coord_pub', anonymous=True)
     rate = rospy.Rate(PUB_RATE) # 10hz
     pose = PoseStamped()
     pose.header.frame_id = "vicon"
