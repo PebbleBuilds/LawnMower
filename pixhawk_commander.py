@@ -30,7 +30,7 @@ def talker():
             T_1 = PoseStamped_2_mat(stored_pose_estimate)
             error_T = T_inv(T_1) * T_2
             error.pose = Mat_2_posestamped(error_T)
-            pub.publish()
+            pub.publish(error)
         rate.sleep()
 
 if __name__ == '__main__':
