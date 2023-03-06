@@ -1,14 +1,8 @@
 #!/usr/bin/env python
-# ROS python API
 import rospy
-
-# 3D point & Stamped Pose msgs
-from geometry_msgs.msg import Point, PoseStamped
-
-# import all mavros messages and services
-from mavros_msgs.msg import State, PositionTarget
+from geometry_msgs.msg import PoseStamped
+from mavros_msgs.msg import PositionTarget
 from std_srvs.srv import Empty, EmptyResponse
-
 
 # position constants
 SET_ALT = 1.5
@@ -19,6 +13,7 @@ LAND = 1
 TEST = 2
 ABORT = 3
 
+RATE = 20
 
 class CommNode:
     # Main communication node for ground control
@@ -34,7 +29,7 @@ class CommNode:
         self.srv_land = rospy.Service(node_name + "/comm/land", Empty, self.land_cb)
         self.srv_abort = rospy.Service(node_name + "/comm/abort", Empty, self.abort_cb)
         self.mode = None
-        self.rate = rospy.Rate(20)
+        self.rate = rospy.Rate(RATE)
 
         # initialize subscribers
         rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.cnt.pose_cb)
@@ -71,9 +66,7 @@ class CommNode:
         self.set_point.position.z = self.goal_z
 
     # Callback handlers
-    def handle_launch(
-        self,
-    ):
+    def handle_launch(self):
         print("Launch Requested. Your drone should take off.")
         self.goal_z = SET_ALT
         self.mode = TAKEOFF
@@ -116,6 +109,7 @@ class CommNode:
     def spin(self):
         while not rospy.is_shutdown():
             # update setpoints
+            self.updateSp()
             # publish setpoints
             self.sp_pub.publish(self.cnt.sp)
             self.rate.sleep()
