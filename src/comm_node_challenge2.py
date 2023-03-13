@@ -22,7 +22,7 @@ class CommNode:
         rospy.init_node(node_name)
 
         # initialize services
-	# Change service defs to node_name+'/comm/name' when they add team names
+        # Change service defs to node_name+'/comm/name' when they add team names
         self.srv_launch = rospy.Service(
             "/comm/launch", Empty, self.launch_cb
         )
@@ -31,7 +31,7 @@ class CommNode:
         self.srv_abort = rospy.Service("/comm/abort", Empty, self.abort_cb)
         self.mode = None
         self.rate = rospy.Rate(RATE)
-	print("services intiialized")
+        print("services intiialized")
 
         # initialize subscribers
         rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.posCb)
@@ -60,8 +60,8 @@ class CommNode:
         self.set_point.pose.orientation.y = 0
         self.set_point.pose.orientation.z = 0
 
-	# intialize local_pos position
-	self.local_pos = Point(0, 0, 0)
+        # intialize local_pos position
+        self.local_pos = Point(0, 0, 0)
 
 
     def posCb(self, msg):
