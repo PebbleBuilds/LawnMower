@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import rospy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Point
 from mavros_msgs.msg import PositionTarget
 from std_srvs.srv import Empty, EmptyResponse
 
 # position constants
-SET_ALT = 1.5
+SET_ALT = 0.8    ## should be 1.5
 
 # mode constants
 TAKEOFF = 0
@@ -22,36 +22,47 @@ class CommNode:
         rospy.init_node(node_name)
 
         # initialize services
+	# Change service defs to node_name+'/comm/name' when they add team names
         self.srv_launch = rospy.Service(
-            node_name + "/comm/launch", Empty, self.launch_cb
+            "/comm/launch", Empty, self.launch_cb
         )
-        self.srv_test = rospy.Service(node_name + "/comm/test", Empty, self.test_cb)
-        self.srv_land = rospy.Service(node_name + "/comm/land", Empty, self.land_cb)
-        self.srv_abort = rospy.Service(node_name + "/comm/abort", Empty, self.abort_cb)
+        self.srv_test = rospy.Service("/comm/test", Empty, self.test_cb)
+        self.srv_land = rospy.Service( "/comm/land", Empty, self.land_cb)
+        self.srv_abort = rospy.Service("/comm/abort", Empty, self.abort_cb)
         self.mode = None
         self.rate = rospy.Rate(RATE)
+	print("services intiialized")
 
         # initialize subscribers
-        rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.cnt.pose_cb)
+        rospy.Subscriber("/mavros/local_position/pose", PoseStamped, self.posCb)
 
         # initialize publishers
         self.sp_pub = rospy.Publisher(
-            "/mavros/setpoint_position/local", PositionTarget, queue_size=1
+            "/mavros/setpoint_position/local", PoseStamped, queue_size=1
         )
 
         # initialize setpoints
-        self.set_point = PositionTarget()
-        self.set_point.type_mask = int("010111111000", 2)
-        self.set_point.coordinate_frame = 1
+        self.set_point = PoseStamped()
 
         self.goal_x = 0
         self.goal_y = 0
-        self.goal_z = 0
+        self.goal_z = 0.8
+        # self.goal_z = 0
 
         # initialize set_point position
-        self.set_point.position.x = self.goal_x
-        self.set_point.position.y = self.goal_y
-        self.set_point.position.z = self.goal_z
+        self.set_point.pose.position.x = self.goal_x
+        self.set_point.pose.position.y = self.goal_y
+        self.set_point.pose.position.z = self.goal_z
+
+        # initialize set_point orientation
+        self.set_point.pose.orientation.w = 1
+        self.set_point.pose.orientation.x = 0
+        self.set_point.pose.orientation.y = 0
+        self.set_point.pose.orientation.z = 0
+
+	# intialize local_pos position
+	self.local_pos = Point(0, 0, 0)
+
 
     def posCb(self, msg):
         # update local position
@@ -61,9 +72,9 @@ class CommNode:
 
     def updateSp(self):
         # update setpoint being published
-        self.set_point.position.x = self.goal_x
-        self.set_point.position.y = self.goal_y
-        self.set_point.position.z = self.goal_z
+        self.set_point.pose.position.x = self.goal_x
+        self.set_point.pose.position.y = self.goal_y
+        self.set_point.pose.position.z = self.goal_z
 
     # Callback handlers
     def handle_launch(self):
@@ -111,7 +122,7 @@ class CommNode:
             # update setpoints
             self.updateSp()
             # publish setpoints
-            self.sp_pub.publish(self.cnt.sp)
+            self.sp_pub.publish(self.set_point)
             self.rate.sleep()
 
 
