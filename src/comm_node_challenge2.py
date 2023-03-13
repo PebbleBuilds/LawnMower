@@ -38,22 +38,27 @@ class CommNode:
 
         # initialize publishers
         self.sp_pub = rospy.Publisher(
-            "/mavros/setpoint_raw/local", PositionTarget, queue_size=1
+            "/mavros/setpoint_position/local", PoseStamped, queue_size=1
         )
 
         # initialize setpoints
-        self.set_point = PositionTarget()
-        self.set_point.type_mask = int("010111111000", 2)
-        self.set_point.coordinate_frame = 1
+        self.set_point = PoseStamped()
 
         self.goal_x = 0
         self.goal_y = 0
-        self.goal_z = 0
+        self.goal_z = 0.8
+        # self.goal_z = 0
 
         # initialize set_point position
-        self.set_point.position.x = self.goal_x
-        self.set_point.position.y = self.goal_y
-        self.set_point.position.z = self.goal_z
+        self.set_point.pose.position.x = self.goal_x
+        self.set_point.pose.position.y = self.goal_y
+        self.set_point.pose.position.z = self.goal_z
+
+        # initialize set_point orientation
+        self.set_point.pose.orientation.w = 1
+        self.set_point.pose.orientation.x = 0
+        self.set_point.pose.orientation.y = 0
+        self.set_point.pose.orientation.z = 0
 
 	# intialize local_pos position
 	self.local_pos = Point(0, 0, 0)
@@ -67,9 +72,9 @@ class CommNode:
 
     def updateSp(self):
         # update setpoint being published
-        self.set_point.position.x = self.goal_x
-        self.set_point.position.y = self.goal_y
-        self.set_point.position.z = self.goal_z
+        self.set_point.pose.position.x = self.goal_x
+        self.set_point.pose.position.y = self.goal_y
+        self.set_point.pose.position.z = self.goal_z
 
     # Callback handlers
     def handle_launch(self):
