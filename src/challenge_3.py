@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # TODO account for offset from vicon markers to pixhawk center
 
 import numpy as np
