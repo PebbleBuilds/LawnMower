@@ -5,8 +5,8 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import PoseArray, Pose, PoseStamped
 from std_srvs.srv import Empty, EmptyResponse
-from utils.waypoint_follower import WaypointFollower
-from utils.pose_utils import create_posestamped, posestamped2np
+from waypoint_follower import WaypointFollower
+from pose_utils import create_posestamped, posestamped2np
 
 WF = WaypointFollower(radius=0.5, hold_time=2, launch_height=1, waypoints=None)
 
@@ -20,7 +20,6 @@ def callback_launch(request):
 
 def callback_test(request):
     print("Test Requested.")
-    WF.init_test()
     WF.set_state("Test")
     return EmptyResponse()
 
@@ -37,7 +36,7 @@ def callback_abort(request):
     return EmptyResponse()
 
 
-def callback_pose(msg: PoseStamped):
+def callback_pose(msg):
     WF.update_pose(msg)
 
 

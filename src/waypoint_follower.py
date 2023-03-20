@@ -5,19 +5,19 @@
 import numpy as np
 import rospy
 from geometry_msgs.msg import Point, PoseStamped
-from utils.pose_utils import create_posestamped, np2posestamped, posestamped2np
+from pose_utils import create_posestamped, np2posestamped, posestamped2np
 
 
 class WaypointFollower:
     def __init__(
         self,
-        radius: float = 0.5,
-        hold_time: int = 2,
-        launch_height: float = 1,
+        radius = 0.5,
+        hold_time = 2,
+        launch_height= 1,
         waypoints=None,
-    ) -> None:
-        self.waypoint_idx: int = 0
-        self.waypoints_received: bool = False
+    ):
+        self.waypoint_idx = 0
+        self.waypoints_received = False
         if waypoints is not None:
             self.set_waypoints(waypoints)
         self.radius = radius
@@ -31,6 +31,7 @@ class WaypointFollower:
         self.setpoint = create_posestamped([0, 0, 0])
 
         self.launch_height = launch_height
+        self.test_initialized = False
 
     def set_waypoints(self, waypoints):
         if self.waypoints_received:
@@ -39,33 +40,35 @@ class WaypointFollower:
         self.waypoints = waypoints
         self.waypoints_received = True
 
-    def set_state(self, state: str):
+    def set_state(self, state):
         assert state in ["Launch", "Test", "Land", "Abort", "Init"], (
             "Invalid state " + state
         )
         self.state = state
 
-    def update_pose(self, drone_pose: PoseStamped):
+    def update_pose(self, drone_pose):
         self.current_pose = drone_pose
 
-    def get_setpoint(self, drone_pose: PoseStamped) -> PoseStamped:
+    def get_setpoint(self):
         print("State: " + self.state)
         if self.state == "Launch":
             # set setpoint to point above origin
             self.setpoint = self.origin_setpoint
             self.setpoint.pose.position.z = self.launch_height
         elif self.state == "Test":
+            if not self.test_initialized:
+                self.init_test()
             if not self.waypoints_received:
                 print("Waiting for waypoints")
                 return self.setpoint
-            return self.handle_test(drone_pose)
+            return self.handle_test()
         elif self.state == "Land":
             # set setpoint to origin
             self.setpoint = self.origin_setpoint
         elif self.state == "Abort":
             self.setpoint = self.origin_setpoint
-            self.setpoint.pose.position.x = drone_pose.pose.position.x
-            self.setpoint.pose.position.y = drone_pose.pose.position.y
+            self.setpoint.pose.position.x = self.current_pose.pose.position.x
+            self.setpoint.pose.position.y = self.current_pose.pose.position.y
         elif self.state == "Init":
             self.setpoint = self.origin_setpoint
         else:
@@ -79,11 +82,12 @@ class WaypointFollower:
         self.waypoint_idx = 0
         self.hold_timer = 0
         self.start_time = None
+        self.test_initialized = True
 
-    def handle_test(self, drone_pose):
+    def handle_test(self, ):
         # check distance to current waypoint
         dist = np.linalg.norm(
-            np2posestamped(drone_pose.pose.position)
+            posestamped2np(self.current_pose)
             - self.waypoints[self.waypoint_idx, :]
         )
         # if within radius, increment timer
@@ -94,6 +98,7 @@ class WaypointFollower:
         # if timer exceeds hold_time, increment waypoint
         if self.hold_timer > self.hold_time:
             self.waypoint_idx += 1
+            print("waypoint reached, indexing to next waypoint")
             # if waypoint index exceeds number of waypoints, reset to 0
             if self.waypoint_idx >= self.waypoints.shape[0]:
                 self.waypoint_idx = 0
