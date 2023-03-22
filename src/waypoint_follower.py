@@ -11,7 +11,7 @@ from pose_utils import create_posestamped, np2posestamped, posestamped2np
 class WaypointFollower:
     def __init__(
         self,
-        radius = 0.5,
+        radius = 0.05,
         hold_time = 2,
         launch_height= 1,
         waypoints=None,
@@ -50,7 +50,7 @@ class WaypointFollower:
         self.current_pose = drone_pose
 
     def get_setpoint(self):
-        print("State: " + self.state)
+        # print("State: " + self.state)
         if self.state == "Launch":
             # set setpoint to point above origin
             self.setpoint = self.origin_setpoint
@@ -80,7 +80,6 @@ class WaypointFollower:
     def init_test(self):
         # initialize timers and waypoint index
         self.waypoint_idx = 0
-        self.hold_timer = 0
         self.start_time = None
         self.test_initialized = True
 
@@ -91,12 +90,12 @@ class WaypointFollower:
             - self.waypoints[self.waypoint_idx, :]
         )
         # if within radius, increment timer
-        if dist < self.radius:
-            if self.start_time is None:
-                self.start_time = rospy.get_time()
-            self.hold_timer += rospy.get_time() - self.start_time
+        if dist < self.radius and self.start_time is None:
+            print("starting timer on waypoint", self.waypoint_idx)
+            self.start_time = rospy.get_time()
+            print(rospy.get_time())
         # if timer exceeds hold_time, increment waypoint
-        if self.hold_timer > self.hold_time:
+        if self.start_time is not None and rospy.get_time() - self.start_time > self.hold_time:
             self.waypoint_idx += 1
             print("waypoint reached, indexing to next waypoint")
             # if waypoint index exceeds number of waypoints, reset to 0
@@ -104,7 +103,6 @@ class WaypointFollower:
                 self.waypoint_idx = 0
                 print("Waypoints complete. Resetting to first waypoint.")
             # reset timer
-            self.hold_timer = 0
             self.start_time = None
         self.setpoint = create_posestamped(self.waypoints[self.waypoint_idx, :])
         return self.setpoint
