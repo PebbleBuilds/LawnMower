@@ -1,4 +1,5 @@
 from geometry_msgs.msg import Point, PoseStamped
+import tf2_geometry_msgs
 import numpy as np
 def create_posestamped(pose_xyz, orientation=[1, 0, 0, 0]):
     pose_stamped = PoseStamped()
@@ -18,3 +19,16 @@ def posestamped2np(pose):
 
 def np2posestamped(pose):
     return create_posestamped(pose)
+
+def vicontf_to_Hvi(vicon_tf):
+    H_vi = np.eye(4,4)
+    C_vi = tf2_geometry_msgs.transform_to_matrix(vicon_tf.rotation)
+    t_vi_i = np.array([
+        vicon_tf.translation.x,
+        vicon_tf.translation.y,
+        vicon_tf.translation.z
+    ])
+    t_iv_v = -C_vi @ t_vi_i
+    H_vi[0:3,0:3] = C_vi
+    H_vi[0:3,3] = t_vi_i
+    return H_vi
