@@ -5,7 +5,7 @@
 import numpy as np
 import rospy
 import tf2_geometry_msgs
-from geometry_msgs.msg import Point, PoseStamped, TransformPoseStamped
+from geometry_msgs.msg import Point, PoseStamped, TransformStamped
 from pose_utils import create_posestamped, np2posestamped, posestamped2np, vicontf_to_Hvi
 
 
@@ -30,18 +30,19 @@ class WaypointFollower:
         self.origin_setpoint = create_posestamped([0, 0, 0])
 
         self.setpoint = create_posestamped([0, 0, 0])
-        self.vicon_tf = TransformPoseStamped()
+        self.vicon_tf = None
         self.launch_height = launch_height
         self.test_initialized = False
 
     def set_vicon_tf(self, vicon_tf):
-        if self.vicon_tf is not None:
+        if vicon_tf is not None:
             self.vicon_tf = vicon_tf
             self.H_vi = vicontf_to_Hvi(vicon_tf)
             print("assigning vicon tf to", vicon_tf)
-
+        else:
+            print("vicon is ", self.vicon_tf)
     def set_waypoints(self, waypoints):
-        assert self.vicon is not None, "vicon tf not received, cannot set waypoints"
+        assert self.vicon_tf is not None, "vicon tf not received, cannot set waypoints"
 
         if self.waypoints_received:
             return
@@ -56,7 +57,7 @@ class WaypointFollower:
         t_iv_v = -C_vi @ t_vi_i
         """
         waypoints_aug = np.hstack(waypoints, np.ones(waypoints.shape[0])) # [num_waypoints, 4]
-        waypoints_aug = self.H_vi @ waypoints_aug.T # [4, num_waypoints]
+        waypoints_aug = np.matmul(self.H_vi, waypoints_aug.T) # [4, num_waypoints]
         waypoints_aug = waypoints_aug.T # [num_waypoints, 4]
 
         self.waypoints = waypoints_aug[:, :3]

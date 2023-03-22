@@ -28,7 +28,7 @@ def vicontf_to_Hvi(vicon_tf):
         vicon_tf.translation.y,
         vicon_tf.translation.z
     ])
-    t_iv_v = -C_vi @ t_vi_i
+    t_iv_v = np.matmul(-C_vi, t_vi_i)
     H_vi[0:3,0:3] = C_vi
     H_vi[0:3,3] = t_vi_i
     return H_vi
