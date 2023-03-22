@@ -1,5 +1,5 @@
 from geometry_msgs.msg import Point, PoseStamped
-import tf2_geometry_msgs
+from tf.transformations import quaternion_matrix
 import numpy as np
 def create_posestamped(pose_xyz, orientation=[1, 0, 0, 0]):
     pose_stamped = PoseStamped()
@@ -22,7 +22,7 @@ def np2posestamped(pose):
 
 def vicontf_to_Hvi(vicon_tf):
     H_vi = np.eye(4,4)
-    C_vi = tf2_geometry_msgs.transform_to_matrix(vicon_tf.rotation)
+    C_vi = quaternion_matrix(vicon_tf.rotation)
     t_vi_i = np.array([
         vicon_tf.translation.x,
         vicon_tf.translation.y,

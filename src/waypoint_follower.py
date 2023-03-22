@@ -4,7 +4,6 @@
 
 import numpy as np
 import rospy
-import tf2_geometry_msgs
 from geometry_msgs.msg import Point, PoseStamped, TransformStamped
 from pose_utils import create_posestamped, np2posestamped, posestamped2np, vicontf_to_Hvi
 
