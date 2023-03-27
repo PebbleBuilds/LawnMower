@@ -6,7 +6,7 @@ import rospy
 from geometry_msgs.msg import PoseArray, Pose, PoseStamped, TransformStamped
 from std_srvs.srv import Empty, EmptyResponse
 from waypoint_follower import WaypointFollower
-from pose_utils import create_posestamped, posestamped2np
+from pose_utils import create_posestamped, pose2np
 
 WF = WaypointFollower(radius=0.5, hold_time=2, launch_height=1, waypoints=None)
 
@@ -46,7 +46,7 @@ def callback_waypoints(msg):
     # convert waypoints to numpy array
     WAYPOINTS = np.empty((len(msg.poses), 3))
     for i, pose in enumerate(msg.poses):
-        WAYPOINTS[i] = posestamped2np(pose)
+        WAYPOINTS[i] = pose2np(pose)
     # TODO compensate for offset between vicon markers and pixhawk center
     WF.set_waypoints(WAYPOINTS)
 

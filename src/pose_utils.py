@@ -14,8 +14,11 @@ def create_posestamped(pose_xyz, orientation=[1, 0, 0, 0]):
     pose_stamped.pose.orientation.z = z_o
     return pose_stamped
 
-def posestamped2np(pose):
-    return np.array([pose.pose.position.x, pose.pose.position.y, pose.pose.position.z])
+def posestamped2np(posestamped):
+    return pose2np(posestamped.pose)
+
+def pose2np(pose):
+    return np.array([pose.position.x, pose.position.y, pose.position.z])
 
 def np2posestamped(pose):
     return create_posestamped(pose)

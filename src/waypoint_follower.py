@@ -45,7 +45,7 @@ class WaypointFollower:
             return
         print("Setting waypoints:", waypoints)
 
-        waypoints_aug = np.hstack(waypoints, np.ones(waypoints.shape[0])) # [num_waypoints, 4]
+        waypoints_aug = np.hstack([waypoints, np.ones((waypoints.shape[0], 1))]) # [num_waypoints, 4]
         waypoints_aug = np.matmul(self.H_vi, waypoints_aug.T) # [4, num_waypoints]
         waypoints_aug = waypoints_aug.T # [num_waypoints, 4]
 
