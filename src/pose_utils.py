@@ -22,13 +22,20 @@ def np2posestamped(pose):
 
 def vicontf_to_Hvi(vicon_tf):
     H_vi = np.eye(4,4)
-    C_vi = quaternion_matrix(vicon_tf.rotation)
+    vicon_tf_array = [
+        vicon_tf.rotation.x,
+        vicon_tf.rotation.y,
+        vicon_tf.rotation.z,
+        vicon_tf.rotation.w
+        ]
+    C_vi = quaternion_matrix(vicon_tf_array).T[0:3, 0:3]
+    
     t_vi_i = np.array([
         vicon_tf.translation.x,
         vicon_tf.translation.y,
         vicon_tf.translation.z
     ])
-    t_iv_v = np.matmul(-C_vi, t_vi_i)
+    t_iv_v = -np.matmul(C_vi, t_vi_i)
     H_vi[0:3,0:3] = C_vi
-    H_vi[0:3,3] = t_vi_i
+    H_vi[0:3,3] = t_iv_v
     return H_vi
