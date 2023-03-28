@@ -14,8 +14,20 @@ def create_posestamped(pose_xyz, orientation=[1, 0, 0, 0]):
     pose_stamped.pose.orientation.z = z_o
     return pose_stamped
 
-def posestamped2np(pose):
-    return np.array([pose.pose.position.x, pose.pose.position.y, pose.pose.position.z])
+def transformstamped2np(transformstamped,include_time=False):
+    t_vector = transformstamped.transform.translation
+    stamp = transformstamped.header.stamp
+    if include_time:
+        return np.array([t_vector.x, t_vector.y, t_vector.z, stamp])
+    else:
+        return np.array([t_vector.x, t_vector.y, t_vector.z])
+
+def posestamped2np(pose,include_time=False):
+    if include_time:
+        stamp = pose.header.stamp
+        return np.array([t_vector.x, t_vector.y, t_vector.z, stamp])
+    else:
+        return np.array([pose.pose.position.x, pose.pose.position.y, pose.pose.position.z])
 
 def np2posestamped(pose):
     return create_posestamped(pose)
