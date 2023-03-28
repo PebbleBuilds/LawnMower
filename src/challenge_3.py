@@ -1,11 +1,12 @@
+#!/usr/bin/env python
 # TODO account for offset from vicon markers to pixhawk center
 
 import numpy as np
 import rospy
-from geometry_msgs.msg import PoseArray, Pose, PoseStamped
+from geometry_msgs.msg import PoseArray, Pose, PoseStamped, TransformStamped
 from std_srvs.srv import Empty, EmptyResponse
-from utils.waypoint_follower import WaypointFollower
-from utils.pose_utils import create_posestamped, posestamped2np
+from waypoint_follower import WaypointFollower
+from pose_utils import create_posestamped, posestamped2np
 
 WF = WaypointFollower(radius=0.5, hold_time=2, launch_height=1, waypoints=None)
 
@@ -19,7 +20,6 @@ def callback_launch(request):
 
 def callback_test(request):
     print("Test Requested.")
-    WF.init_test()
     WF.set_state("Test")
     return EmptyResponse()
 
@@ -36,9 +36,11 @@ def callback_abort(request):
     return EmptyResponse()
 
 
-def callback_pose(msg: PoseStamped):
+def callback_pose(msg):
     WF.update_pose(msg)
 
+def callback_vicon(msg):
+    WF.set_vicon_tf(msg.transform)
 
 def callback_waypoints(msg):
     # convert waypoints to numpy array
@@ -63,11 +65,13 @@ def comm_node():
     sub_waypoints = rospy.Subscriber(
         name + "/comm/waypoints", PoseArray, callback_waypoints
     )
+    rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback_vicon)
     rospy.Subscriber("/mavros/local_position/pose", PoseStamped, callback_pose)
     # publishers
     sp_pub = rospy.Publisher(
         "/mavros/setpoint_position/local", PoseStamped, queue_size=1
     )
+    
     print("Services, subscribers, publishers initialized")
 
     while not rospy.is_shutdown():

@@ -4,20 +4,19 @@
 
 import numpy as np
 import rospy
-from geometry_msgs.msg import Point, PoseStamped
-from utils.pose_utils import create_posestamped, np2posestamped, posestamped2np
+from pose_utils import create_posestamped, posestamped2np, vicontf_to_Hvi
 
 
 class WaypointFollower:
     def __init__(
         self,
-        radius: float = 0.5,
-        hold_time: int = 2,
-        launch_height: float = 1,
+        radius = 0.05,
+        hold_time = 2,
+        launch_height= 1,
         waypoints=None,
-    ) -> None:
-        self.waypoint_idx: int = 0
-        self.waypoints_received: bool = False
+    ):
+        self.waypoint_idx = 0
+        self.waypoints_received = False
         if waypoints is not None:
             self.set_waypoints(waypoints)
         self.radius = radius
@@ -29,43 +28,60 @@ class WaypointFollower:
         self.origin_setpoint = create_posestamped([0, 0, 0])
 
         self.setpoint = create_posestamped([0, 0, 0])
-
         self.launch_height = launch_height
+        self.test_initialized = False
+
+        self.H_vi = None
+
+    def set_vicon_tf(self, vicon_tf):
+        if self.H_vi is None:
+            self.H_vi = vicontf_to_Hvi(vicon_tf)
+            print("Initializing H_vi", self.H_vi)
 
     def set_waypoints(self, waypoints):
+        assert self.H_vi is not None, "vicon tf not received, cannot set waypoints"
+
         if self.waypoints_received:
             return
         print("Setting waypoints:", waypoints)
-        self.waypoints = waypoints
+
+        waypoints_aug = np.hstack(waypoints, np.ones(waypoints.shape[0])) # [num_waypoints, 4]
+        waypoints_aug = np.matmul(self.H_vi, waypoints_aug.T) # [4, num_waypoints]
+        waypoints_aug = waypoints_aug.T # [num_waypoints, 4]
+
+        self.waypoints = waypoints_aug[:, :3]
+        print("Transformed wapoints: ", self.waypoints)
         self.waypoints_received = True
 
-    def set_state(self, state: str):
+    def set_state(self, state):
         assert state in ["Launch", "Test", "Land", "Abort", "Init"], (
             "Invalid state " + state
         )
         self.state = state
 
-    def update_pose(self, drone_pose: PoseStamped):
+    def update_pose(self, drone_pose):
         self.current_pose = drone_pose
 
-    def get_setpoint(self, drone_pose: PoseStamped) -> PoseStamped:
-        print("State: " + self.state)
+    def get_setpoint(self):
+        # print("State: " + self.state)
         if self.state == "Launch":
             # set setpoint to point above origin
             self.setpoint = self.origin_setpoint
             self.setpoint.pose.position.z = self.launch_height
         elif self.state == "Test":
+            if not self.test_initialized:
+                self.init_test()
             if not self.waypoints_received:
                 print("Waiting for waypoints")
                 return self.setpoint
-            return self.handle_test(drone_pose)
+            return self.handle_test()
         elif self.state == "Land":
             # set setpoint to origin
             self.setpoint = self.origin_setpoint
         elif self.state == "Abort":
             self.setpoint = self.origin_setpoint
-            self.setpoint.pose.position.x = drone_pose.pose.position.x
-            self.setpoint.pose.position.y = drone_pose.pose.position.y
+            self.setpoint.pose.position.x = self.current_pose.pose.position.x
+            self.setpoint.pose.position.y = self.current_pose.pose.position.y
         elif self.state == "Init":
             self.setpoint = self.origin_setpoint
         else:
@@ -77,29 +93,29 @@ class WaypointFollower:
     def init_test(self):
         # initialize timers and waypoint index
         self.waypoint_idx = 0
-        self.hold_timer = 0
         self.start_time = None
+        self.test_initialized = True
 
-    def handle_test(self, drone_pose):
+    def handle_test(self, ):
         # check distance to current waypoint
         dist = np.linalg.norm(
-            np2posestamped(drone_pose.pose.position)
+            posestamped2np(self.current_pose)
             - self.waypoints[self.waypoint_idx, :]
         )
         # if within radius, increment timer
-        if dist < self.radius:
-            if self.start_time is None:
-                self.start_time = rospy.get_time()
-            self.hold_timer += rospy.get_time() - self.start_time
+        if dist < self.radius and self.start_time is None:
+            print("starting timer on waypoint", self.waypoint_idx)
+            self.start_time = rospy.get_time()
+            print(rospy.get_time())
         # if timer exceeds hold_time, increment waypoint
-        if self.hold_timer > self.hold_time:
+        if self.start_time is not None and rospy.get_time() - self.start_time > self.hold_time:
             self.waypoint_idx += 1
+            print("waypoint reached, indexing to next waypoint")
             # if waypoint index exceeds number of waypoints, reset to 0
             if self.waypoint_idx >= self.waypoints.shape[0]:
                 self.waypoint_idx = 0
                 print("Waypoints complete. Resetting to first waypoint.")
             # reset timer
-            self.hold_timer = 0
             self.start_time = None
         self.setpoint = create_posestamped(self.waypoints[self.waypoint_idx, :])
         return self.setpoint

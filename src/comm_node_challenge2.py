@@ -5,7 +5,7 @@ from mavros_msgs.msg import PositionTarget
 from std_srvs.srv import Empty, EmptyResponse
 
 # position constants
-SET_ALT = 0.8    ## should be 1.5
+SET_ALT = 1.44   ## should be 1.5
 
 # mode constants
 TAKEOFF = 0
@@ -24,11 +24,11 @@ class CommNode:
         # initialize services
         # Change service defs to node_name+'/comm/name' when they add team names
         self.srv_launch = rospy.Service(
-            "/comm/launch", Empty, self.launch_cb
+           self.node_name + "/comm/launch", Empty, self.launch_cb
         )
-        self.srv_test = rospy.Service("/comm/test", Empty, self.test_cb)
-        self.srv_land = rospy.Service( "/comm/land", Empty, self.land_cb)
-        self.srv_abort = rospy.Service("/comm/abort", Empty, self.abort_cb)
+        self.srv_test = rospy.Service(self.node_name + "/comm/test", Empty, self.test_cb)
+        self.srv_land = rospy.Service( self.node_name + "/comm/land", Empty, self.land_cb)
+        self.srv_abort = rospy.Service(self.node_name + "/comm/abort", Empty, self.abort_cb)
         self.mode = None
         self.rate = rospy.Rate(RATE)
         print("services intiialized")
@@ -46,7 +46,7 @@ class CommNode:
 
         self.goal_x = 0
         self.goal_y = 0
-        self.goal_z = 0.8
+        self.goal_z = 1.44
         # self.goal_z = 0
 
         # initialize set_point position
@@ -86,6 +86,7 @@ class CommNode:
         print(
             "Test Requested. Your drone should perform the required tasks. Recording starts now."
         )
+        self.goal_z = SET_ALT
         self.mode = TEST
 
     def handle_land(self):

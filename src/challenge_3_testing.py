@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # TODO account for offset from vicon markers to pixhawk center
 # dummy testing script for waypoint follower without subscribers
 
@@ -5,8 +7,8 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import PoseArray, Pose, PoseStamped
 from std_srvs.srv import Empty, EmptyResponse
-from utils.waypoint_follower import WaypointFollower
-from utils.pose_utils import create_posestamped, posestamped2np
+from waypoint_follower import WaypointFollower
+from pose_utils import create_posestamped, posestamped2np
 
 TEST_SETPOINTS = np.array(
     [
@@ -22,7 +24,7 @@ WF = WaypointFollower(
 )
 
 
-def callback_pose(msg: PoseStamped):
+def callback_pose(msg):
     WF.update_pose(msg)
 
 
