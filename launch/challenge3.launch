@@ -1,27 +1,12 @@
 <launch>
-    <arg name="ns" default="/"/>
     <arg name="fcu_url" default="udp://:14540@localhost:14557"/>
-    <arg name="gcs_url" default="" />   <!-- GCS link is provided by SITL -->
-    <arg name="tgt_system" default="1" />
-    <arg name="tgt_component" default="1" />
-    <arg name="group_name" default="rob498_drone_02" />
+
     <!-- Launch bridge -->
-    <include file="$(find px4_realsense_bridge)/launch/bridge.launch" >
+    <include file="$(find px4_realsense_bridge)/launch/bridge_mavros.launch" >
+        <arg name="fcu_url" value="$(arg fcu_url)" />
     </include>
 
-    <!-- Launch MavROS -->
-    <group ns="$(arg ns)">
-        <include file="$(find mavros)/launch/node.launch">
-            <arg name="pluginlists_yaml" value="$(find mavros)/launch/px4_pluginlists.yaml" />
-            <!-- Need to change the config file to get the tf topic and get local position in terms of local origin -->
-            <arg name="config_yaml" value="$(find mavros)/launch/px4_config.yaml" />
-            <arg name="fcu_url" value="$(arg fcu_url)" />
-            <arg name="gcs_url" value="$(arg gcs_url)" />
-            <arg name="tgt_system" value="$(arg tgt_system)" />
-            <arg name="tgt_component" value="$(arg tgt_component)" />
-        </include>
-    </group>
-
+    <arg name="group_name" default="rob498_drone_02" />
     <!-- Launch waypoint finder node -->
     <!-- TODO add toggle for subscribing to vicon vs querying vicon -->
     <node pkg="LawnMower" type="challenge_3.py" name="challenge_3" output="screen"/>
