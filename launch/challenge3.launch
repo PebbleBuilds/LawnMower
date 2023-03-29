@@ -1,21 +1,19 @@
 <launch>
-    <arg name="fcu_url" default="udp://:14540@localhost:14557"/>
+    <arg name="fcu_url" default="udp://:14540@localhost:14557" />
 
     <!-- Launch bridge -->
-    <include file="$(find px4_realsense_bridge)/launch/bridge_mavros.launch" >
+    <include file="$(find px4_realsense_bridge)/launch/bridge_mavros.launch">
         <arg name="fcu_url" value="$(arg fcu_url)" />
     </include>
 
     <arg name="group_name" default="rob498_drone_02" />
     <!-- Launch waypoint finder node -->
     <!-- TODO add toggle for subscribing to vicon vs querying vicon -->
-    <node pkg="LawnMower" type="challenge_3.py" name="challenge_3" output="screen"/>
+    <node pkg="LawnMower" type="challenge_3.py" name="challenge_3" output="screen" />
     <!-- Launch vicon bridge node -->
     <node pkg="LawnMower" type="vicon2pixhawk_node.py" name="vicon_bridge" output="screen">
         <param name="vicon_topic" value="/vicon/ROB498_Drone/ROB498_Drone" />
         <param name="pixhawk_topic" value="/mavros/vision_pose/pose" />
         <param name="group_name" value="$(arg group_name)" />
     </node>
-
-
 </launch>
