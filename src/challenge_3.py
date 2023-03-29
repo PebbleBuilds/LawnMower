@@ -71,7 +71,7 @@ def comm_node():
     sp_pub = rospy.Publisher(
         "/mavros/setpoint_position/local", PoseStamped, queue_size=1
     )
-    
+
     print("Services, subscribers, publishers initialized")
 
     while not rospy.is_shutdown():
