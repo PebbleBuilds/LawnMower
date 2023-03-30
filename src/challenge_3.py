@@ -12,25 +12,25 @@ WF = WaypointFollower(radius=0.5, hold_time=1, launch_height=1, waypoints=None, 
 
 # Service callbacks
 def callback_launch(request):
-    print("Launch Requested.")
+    rospy.loginfo("Launch Requested.")
     WF.set_state("Launch")
     return EmptyResponse()
 
 
 def callback_test(request):
-    print("Test Requested.")
+    rospy.loginfo("Test Requested.")
     WF.set_state("Test")
     return EmptyResponse()
 
 
 def callback_land(request):
-    print("Land Requested.")
+    rospy.loginfo("Land Requested.")
     WF.set_state("Land")
     return EmptyResponse()
 
 
 def callback_abort(request):
-    print("Abort Requested.")
+    rospy.loginfo("Abort Requested.")
     WF.set_state("Abort")
     return EmptyResponse()
 
@@ -38,8 +38,10 @@ def callback_abort(request):
 def callback_pose(msg):
     WF.update_pose(msg)
 
+
 def callback_vicon(msg):
     WF.set_vicon_tf(msg.transform)
+
 
 def callback_waypoints(msg):
     # convert waypoints to numpy array
@@ -64,14 +66,15 @@ def comm_node():
     sub_waypoints = rospy.Subscriber(
         "/" + name + "/comm/waypoints", PoseArray, callback_waypoints
     )
-    rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback_vicon)
+    rospy.Subscriber(
+        "/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback_vicon
+    )
     rospy.Subscriber("/mavros/local_position/pose", PoseStamped, callback_pose)
     # publishers
     sp_pub = rospy.Publisher(
         "/mavros/setpoint_position/local", PoseStamped, queue_size=1
     )
-    
-    print("Services, subscribers, publishers initialized")
+    rospy.loginfo("Services, subscribers, publishers initialized")
 
     while not rospy.is_shutdown():
         setpoint = WF.get_setpoint()

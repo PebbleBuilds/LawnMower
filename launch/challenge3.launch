@@ -1,0 +1,7 @@
+<launch>
+    <!-- Launch bridge -->
+    <include file="$(find px4_realsense_bridge)/launch/bridge.launch" />
+    <!-- Launch Mavros-->
+    <include file="$(find LawnMower)/launch/challenge3_vicon.launch" />
+
+</launch>
