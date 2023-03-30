@@ -66,6 +66,8 @@ class DirectedGraph:
             for i in range(num_points)
         ])
         points=tuple(map(tuple, np_arr_points))
+        
+        # sort by angle based on if clockwise or not
         if clockwise:
             sorted_points = sorted(points, key=lambda x: -np.arctan2(x[1]-center[1], x[0]-center[0]))
         else:
@@ -110,7 +112,7 @@ class DirectedGraph:
 
     def dijkstra(self, start, end):
         """
-        Written by a certain chatbot.....allegedly
+        Maybe written by a certain chatbot.....allegedly
         can change to A* later
         """
         # Initialize the distance and visited dictionaries
