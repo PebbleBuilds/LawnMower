@@ -15,7 +15,8 @@ class WaypointFollower:
         launch_height= 1,
         waypoints=None,
         dance=False,
-        dance_size=0
+        dance_size=0,
+        face_wall=False
     ):
         self.waypoint_idx = 0
         self.waypoints_received = False
@@ -36,6 +37,8 @@ class WaypointFollower:
         self.H_vi = None
         self.dance = dance
         self.dance_size = dance_size
+
+        self.face_wall = face_wall
 
     def set_vicon_tf(self, vicon_tf):
         if self.H_vi is None:
@@ -130,5 +133,20 @@ class WaypointFollower:
                 rospy.loginfo("Waypoints complete. Resetting to first waypoint.")
             # reset timer
             self.start_time = None
-        self.setpoint = create_posestamped(self.waypoints[self.waypoint_idx, :])
+        
+        if not self.face_wall:
+            self.setpoint = create_posestamped(self.waypoints[self.waypoint_idx, :])
+        else:
+            waypoint = self.waypoints[self.waypoint_idx, :]
+            if np.abs(waypoint[0]) > np.abs(waypoint[1]):
+                if waypoint[0] > 0:
+                    orientation = [1, 0, 0, 0]
+                else:
+                    orientation = [0, 0, 1, 0]
+            else:
+                if waypoint[1] > 0:
+                    orientation = [ 0, 0, 0.7071068, 0.7071068 ]
+                else:
+                    orientation = [ 0, 0, 0.7071068, -0.7071068 ]
+            self.setpoint = create_posestamped(self.waypoints[self.waypoint_idx, :], orientation)
         return self.setpoint
