@@ -34,6 +34,8 @@ class WaypointFollower:
         self.test_initialized = False
 
         self.H_vi = None
+        self.dance = dance
+        self.dance_size = dance_size
 
     def set_vicon_tf(self, vicon_tf):
         if self.H_vi is None:
@@ -61,7 +63,7 @@ class WaypointFollower:
             sw = self.waypoints + np.full((self.waypoints.shape[0], 3), [-self.dance_size, self.dance_size, 0])
             # insert extra waypoints between each waypoint
             self.waypoints = np.hstack((self.waypoints, nw, ne, se, sw)) # [num_waypoints, 12]
-            self.waypoints = self.waypoints.reshape((-1, 3)) # [num_waypoints*12, 3]
+            self.waypoints = self.waypoints.reshape((-1, 3)) # [num_waypoints*4, 3]
 
         self.waypoints_received = True
 
