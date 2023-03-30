@@ -64,8 +64,6 @@ class DirectedGraph:
             self.add_edge(waypoints[i-1], waypoints[i])
         return
 
-    import heapq
-
     def dijkstra(self, start, end):
         # Initialize the distance and visited dictionaries
         distances = {node: float('inf') for node in self.graph}
