@@ -13,25 +13,25 @@ WF = WaypointFollower(radius=0.5, hold_time=2, launch_height=1, waypoints=None)
 
 # Service callbacks
 def callback_launch(request):
-    print("Launch Requested.")
+    rospy.loginfo("Launch Requested.")
     WF.set_state("Launch")
     return EmptyResponse()
 
 
 def callback_test(request):
-    print("Test Requested.")
+    rospy.loginfo("Test Requested.")
     WF.set_state("Test")
     return EmptyResponse()
 
 
 def callback_land(request):
-    print("Land Requested.")
+    rospy.loginfo("Land Requested.")
     WF.set_state("Land")
     return EmptyResponse()
 
 
 def callback_abort(request):
-    print("Abort Requested.")
+    rospy.loginfo("Abort Requested.")
     WF.set_state("Abort")
     return EmptyResponse()
 
@@ -75,8 +75,7 @@ def comm_node():
     sp_pub = rospy.Publisher(
         "/mavros/setpoint_position/local", PoseStamped, queue_size=1
     )
-
-    print("Services, subscribers, publishers initialized")
+    rospy.loginfo("Services, subscribers, publishers initialized")
 
     while not rospy.is_shutdown():
         setpoint = WF.get_setpoint()
