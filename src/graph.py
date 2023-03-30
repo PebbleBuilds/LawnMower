@@ -8,11 +8,6 @@ def distance_point_line(obs, pt1, pt2):
     pt1, pt2 = np.array(pt1), np.array(pt2)
     return np.linalg.norm(np.cross(pt2-pt1, pt1-obs))/np.linalg.norm(pt2-pt1)
 
-class Node:
-    def __init__(self, x, y):
-        self.point = np.array([x, y])
-        self.id = 0
-
 class Edge:
     def __init__(self, start, end):
         self.start = start
@@ -37,11 +32,20 @@ class DirectedGraph:
         self.graph[edge.start].remove(edge)
 
     def calculate_centroid(self, cities):
+        """
+        Potentitally needed if we dont have the center of the obstacle
+        """
         x_sum = sum([city[0] for city in cities])
         y_sum = sum([city[1] for city in cities])
         return (x_sum/len(cities), y_sum/len(cities))
     
-    def find_intersecting_edges(self, center, radius):        
+    def find_intersecting_edges(self, center, radius):   
+        """
+        Finds trajectory edges that overlap with the obstacles.
+        Assumes:
+        * Obstacles do not overlap with each other or waypoints
+        * Given raidus is premultiplied by FOS
+        """     
         intersecting_edges = []
         for edge in self.waypoint_edges:
             if distance_point_line(center, edge.start, edge.end) <= radius:
@@ -50,6 +54,10 @@ class DirectedGraph:
         return intersecting_edges
 
     def add_obstacle(self, center, radius, clockwise, num_points=8, fos=1.5):
+        """
+        Adds an obstacle to the graph and appropriately wires it to other nodes
+        based on whether it lies within the trajectory between two waypoints
+        """
         self.obstacles.append(center)
         center = np.array(center)
         np_arr_points = np.array([
@@ -89,6 +97,10 @@ class DirectedGraph:
         
 
     def add_waypoints(self, waypoints):
+        """
+        Adds major waypoints to the graph. To be called at the beginning of the task before
+        adding pbstacles.
+        """
         for pt in waypoints:
             self.add_node(pt)
         for i in range(1,len(waypoints)):
@@ -97,6 +109,10 @@ class DirectedGraph:
         return
 
     def dijkstra(self, start, end):
+        """
+        Written by a certain chatbot.....allegedly
+        can change to A* later
+        """
         # Initialize the distance and visited dictionaries
         distances = {node: float('inf') for node in self.graph}
         visited = {node: False for node in self.graph}
