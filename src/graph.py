@@ -70,6 +70,7 @@ class DirectedGraph:
         # Initialize the distance and visited dictionaries
         distances = {node: float('inf') for node in self.graph}
         visited = {node: False for node in self.graph}
+        predecessor = {node: None for node in self.graph}
         distances[start] = 0
         
         # Initialize the priority queue with the start node and its distance
@@ -92,10 +93,16 @@ class DirectedGraph:
                 new_distance = distances[current_node] + weight
                 if new_distance < distances[neighbor]:
                     distances[neighbor] = new_distance
+                    predecessor[neighbor] = current_node
                     heapq.heappush(pq, (new_distance, neighbor))
-        
+        path = [end]
+        current_node = end
+        while current_node != start:
+            current_node = predecessor[current_node]
+            path.append(current_node)
+        path.reverse()
         # Return the distance to the end node
-        return distances[end]
+        return path
 
 
     def render(self):
@@ -126,4 +133,5 @@ graph = DirectedGraph()
 waypoints=[(4,1), (8, 6), (12, 2)]
 graph.add_waypoints(waypoints)
 graph.add_obstacle((1,1), 5, True)
+print(graph.dijkstra((4,1), (12,2)))
 graph.render()
