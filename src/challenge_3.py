@@ -8,7 +8,7 @@ from std_srvs.srv import Empty, EmptyResponse
 from waypoint_follower import WaypointFollower
 from pose_utils import create_posestamped, posestamped2np
 
-WF = WaypointFollower(radius=0.5, hold_time=2, launch_height=1, waypoints=None)
+WF = WaypointFollower(radius=0.5, hold_time=1, launch_height=1, waypoints=None, dance=True, dance_size=0.35)
 
 
 # Service callbacks
