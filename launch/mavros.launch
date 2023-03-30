@@ -1,10 +1,10 @@
 <launch>
     <arg name="ns" default="/"/>
     <arg name="fcu_url" default="/dev/ttyTHS1:500000"/>
-    <arg name="gcs_url" default="10.42.0.130:14550" />   <!-- GCS link is provided by SITL -->
+    <arg name="gcs_url" default="udp://@10.42.0.130:14550" />
     <arg name="tgt_system" default="1" />
     <arg name="tgt_component" default="1" />
-  
+
     <!-- Launch MavROS -->
     <group ns="$(arg ns)">
         <include file="$(find mavros)/launch/node.launch">
@@ -17,5 +17,5 @@
             <arg name="tgt_component" value="$(arg tgt_component)" />
         </include>
     </group>
-  
-  </launch>
+
+</launch>
