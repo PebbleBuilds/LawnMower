@@ -14,6 +14,8 @@ class WaypointFollower:
         hold_time = 2,
         launch_height= 1,
         waypoints=None,
+        dance=False,
+        dance_size=0
     ):
         self.waypoint_idx = 0
         self.waypoints_received = False
@@ -49,8 +51,18 @@ class WaypointFollower:
         waypoints_aug = np.matmul(self.H_vi, waypoints_aug.T) # [4, num_waypoints]
         waypoints_aug = waypoints_aug.T # [num_waypoints, 4]
 
-        self.waypoints = waypoints_aug[:, :3]
+        self.waypoints = waypoints_aug[:, :3] # [num_waypoints, 3]
         print("Transformed wapoints: ", self.waypoints)
+        if self.dance:
+            # insert extra waypoints around each waypoint
+            nw = self.waypoints + np.full((self.waypoints.shape[0], 3), [self.dance_size, self.dance_size, 0])
+            ne = self.waypoints + np.full((self.waypoints.shape[0], 3), [self.dance_size, -self.dance_size, 0])
+            se = self.waypoints + np.full((self.waypoints.shape[0], 3), [-self.dance_size, -self.dance_size, 0])
+            sw = self.waypoints + np.full((self.waypoints.shape[0], 3), [-self.dance_size, self.dance_size, 0])
+            # insert extra waypoints between each waypoint
+            self.waypoints = np.hstack((self.waypoints, nw, ne, se, sw)) # [num_waypoints, 12]
+            self.waypoints = self.waypoints.reshape((-1, 3)) # [num_waypoints*12, 3]
+
         self.waypoints_received = True
 
     def set_state(self, state):

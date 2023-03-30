@@ -1,14 +1,13 @@
 #!/usr/bin/env python
-# TODO account for offset from vicon markers to pixhawk center
 
 import numpy as np
 import rospy
-from geometry_msgs.msg import PoseArray, Pose, PoseStamped, TransformStamped
+from geometry_msgs.msg import PoseArray, PoseStamped, TransformStamped
 from std_srvs.srv import Empty, EmptyResponse
 from waypoint_follower import WaypointFollower
 from pose_utils import create_posestamped, pose2np
 
-WF = WaypointFollower(radius=0.5, hold_time=2, launch_height=1, waypoints=None)
+WF = WaypointFollower(radius=0.5, hold_time=1, launch_height=1, waypoints=None, dance=True, dance_size=0.35)
 
 
 # Service callbacks
