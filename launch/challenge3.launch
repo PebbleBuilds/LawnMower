@@ -16,4 +16,7 @@
         <param name="pixhawk_topic" value="/mavros/vision_pose/pose" />
         <param name="group_name" value="$(arg group_name)" />
     </node>
+    <!-- launch vicon transform node -->
+    <node pkg="tf" type="static_transform_publisher" name="vicon_transform"
+        args="0 0 0 0 0 0 /vicon /vicon/ROB498_Drone/ROB498_Drone 1000" />
 </launch>
