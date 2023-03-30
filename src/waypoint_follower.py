@@ -34,19 +34,20 @@ class WaypointFollower:
         self.test_initialized = False
 
         self.H_vi = None
-        self.vicon_tf = None
         self.dance = dance
         self.dance_size = dance_size
 
     def set_vicon_tf(self, vicon_tf):
-        self.vicon_tf = vicon_tf
+        if self.H_vi is None:
+            self.H_vi = vicontf_to_Hvi(vicon_tf)
+            print("Initializing H_vi \n", self.H_vi)
 
     def set_waypoints(self, waypoints):
+        assert self.H_vi is not None, "vicon tf not received, cannot set waypoints"
+
         if self.waypoints_received:
             return
-        print("Setting waypoints and H_vi: \n", waypoints)
-        if self.vicon_tf is not None:
-            self.H_vi = vicontf_to_Hvi(self.vicon_tf)
+        print("Setting waypoints: \n", waypoints)
 
         waypoints_aug = np.hstack([waypoints, np.ones((waypoints.shape[0], 1))]) # [num_waypoints, 4]
         waypoints_aug = np.matmul(self.H_vi, waypoints_aug.T) # [4, num_waypoints]
