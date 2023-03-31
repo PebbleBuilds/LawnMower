@@ -16,6 +16,7 @@ class Edge:
         self.start = start
         self.end = end
         self.cost = np.linalg.norm(np.array(end) - np.array(start))
+        self.vector = np.array(end)-np.array(start)
 
 class DirectedGraph:
     def __init__(self):
@@ -43,6 +44,12 @@ class DirectedGraph:
         y_sum = sum([city[1] for city in cities])
         return (x_sum/len(cities), y_sum/len(cities))
     
+    def is_reverse(self, edge, node):
+        for other_edge in self.graph[node]:
+            if np.dot(edge.vector, other_edge.vector) < 0:
+                return True
+        return False
+
     def find_intersecting_edges(self, center, radius):   
         """
         Finds trajectory edges that overlap with the obstacles.
@@ -66,7 +73,7 @@ class DirectedGraph:
         center = np.array(center)
         np_arr_points = np.array([
             center + radius*fos
-            * np.array((np.cos(2 * np.pi * i / num_points), np.sin(2 * np.pi * i / num_points)))
+            * np.array((round(np.cos(2 * np.pi * i / num_points),2), round(np.sin(2 * np.pi * i / num_points), 2)))
             for i in range(num_points)
         ])
         points=tuple(map(tuple, np_arr_points))
@@ -88,7 +95,7 @@ class DirectedGraph:
             _, neighbors = kdtree.query(edge.start, k=num_points//2)
             for idx in neighbors:
                 dists = np.array([distance_point_line(obs, edge.start, points[idx]) for obs in self.obstacles[:-1]])
-                if not np.any(dists<radius*fos):
+                if not np.any(dists<radius*fos) and not self.is_reverse(Edge(edge.start, points[idx]), points[idx]):
                     # breakpoint()
                     self.add_edge(edge.start, points[idx])
                     self.waypoint_edges.append(self.graph[edge.start][-1])
@@ -96,7 +103,7 @@ class DirectedGraph:
             _, neighbors = kdtree.query(edge.end, k=num_points//2)
             for idx in neighbors:
                 dists = np.array([distance_point_line(obs, points[idx], edge.end) for obs in self.obstacles[:-1]])
-                if not np.any(dists<radius*fos):
+                if not np.any(dists<radius*fos) and not self.is_reverse(Edge(points[idx], edge.end), points[idx]):
                     self.add_edge(points[idx],edge.end)
                     self.waypoint_edges.append(self.graph[points[idx]][-1])
 
@@ -174,12 +181,12 @@ class DirectedGraph:
                         xytext=edge.start,
                         arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3"))
 
-        ax.scatter([p[0] for p in positions.values()], [p[1] for p in positions.values()], s=500, alpha=0.5)
-        if self.path is not None:
-            ax.scatter(self.path[:,0], self.path[:,1], s=500, alpha=0.5, color=[0,1,0])
 
-        for node, pos in positions.items():
-            ax.text(pos[0], pos[1], node)
+        ax.scatter([p[0] for p in positions.values()], [p[1] for p in positions.values()], s=200, alpha=0.5)
+        if self.path is not None:
+            ax.text(self.path[0][0], self.path[0][1], 'S')
+            ax.text(self.path[-1][0], self.path[-1][1], 'G')
+            ax.scatter(self.path[:,0], self.path[:,1], s=500, alpha=0.5, color=[0,1,0])
 
         for obs in self.obstacles:
             circle = plt.Circle(obs, 2, color='r')
@@ -188,13 +195,15 @@ class DirectedGraph:
         plt.show()
 
 
-
+fos=2
+num_points = 6
 graph = DirectedGraph()
-waypoints=[(1,1), (40, 40), (40, 2), (2,40), (1,1)]
+waypoints=[(1,1), (25,45), (60, 60), (40, 2), (2,40), (1,1)]
 graph.add_waypoints(waypoints)
-graph.add_obstacle((10,10), 2, True, num_points=6, fos=1.5)
-graph.add_obstacle((30,30), 2, False, num_points=6, fos=1.5)
-graph.add_obstacle((10,30), 2, False, num_points=6, fos=1.5)
+graph.add_obstacle((10,10), 2, True, num_points=num_points, fos=fos)
+graph.add_obstacle((30,30), 2, False, num_points=num_points, fos=fos)
+graph.add_obstacle((45,50), 2, False, num_points=num_points, fos=fos)
+graph.add_obstacle((10,30), 2, False, num_points=num_points, fos=fos)
 
 print(graph.dijkstra((1,1),(2,40)))
 graph.render()
