@@ -6,7 +6,10 @@ from scipy.spatial import KDTree
 
 def distance_point_line(obs, pt1, pt2):
     pt1, pt2 = np.array(pt1), np.array(pt2)
-    return np.linalg.norm(np.cross(pt2-pt1, pt1-obs))/np.linalg.norm(pt2-pt1)
+    if min(pt1[0],pt2[0])<=obs[0]<=max(pt1[0],pt2[0]) and min(pt1[1],pt2[1])<=obs[1]<=max(pt1[1],pt2[1]):
+        return np.linalg.norm(np.cross(pt2-pt1, pt1-obs))/np.linalg.norm(pt2-pt1)
+    else:
+        return np.inf
 
 class Edge:
     def __init__(self, start, end):
@@ -19,6 +22,7 @@ class DirectedGraph:
         self.graph = {}
         self.obstacles = []
         self.waypoint_edges = []
+        self.path = None
 
     def add_node(self, node):
         if node not in self.graph:
@@ -66,8 +70,6 @@ class DirectedGraph:
             for i in range(num_points)
         ])
         points=tuple(map(tuple, np_arr_points))
-        
-        # sort by angle based on if clockwise or not
         if clockwise:
             sorted_points = sorted(points, key=lambda x: -np.arctan2(x[1]-center[1], x[0]-center[0]))
         else:
@@ -82,15 +84,21 @@ class DirectedGraph:
         intersecting_edges = self.find_intersecting_edges(center, radius*fos)
         kdtree = KDTree(np_arr_points)
         for edge in intersecting_edges:
+            print(edge.start, edge.end)
             _, neighbors = kdtree.query(edge.start, k=num_points//2)
             for idx in neighbors:
-                self.add_edge(edge.start, points[idx])
-                self.waypoint_edges.append(self.graph[edge.start][-1])
+                dists = np.array([distance_point_line(obs, edge.start, points[idx]) for obs in self.obstacles[:-1]])
+                if not np.any(dists<radius*fos):
+                    # breakpoint()
+                    self.add_edge(edge.start, points[idx])
+                    self.waypoint_edges.append(self.graph[edge.start][-1])
 
             _, neighbors = kdtree.query(edge.end, k=num_points//2)
             for idx in neighbors:
-                self.add_edge(points[idx],edge.end)
-                self.waypoint_edges.append(self.graph[points[idx]][-1])
+                dists = np.array([distance_point_line(obs, points[idx], edge.end) for obs in self.obstacles[:-1]])
+                if not np.any(dists<radius*fos):
+                    self.add_edge(points[idx],edge.end)
+                    self.waypoint_edges.append(self.graph[points[idx]][-1])
 
             self.delete_edge(edge)
             self.waypoint_edges.remove(edge)
@@ -112,7 +120,7 @@ class DirectedGraph:
 
     def dijkstra(self, start, end):
         """
-        Maybe written by a certain chatbot.....allegedly
+        Written by a certain chatbot.....allegedly
         can change to A* later
         """
         # Initialize the distance and visited dictionaries
@@ -150,6 +158,7 @@ class DirectedGraph:
             path.append(current_node)
         path.reverse()
         # Return the distance to the end node
+        self.path = np.array(path)
         return path
 
 
@@ -166,6 +175,9 @@ class DirectedGraph:
                         arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3"))
 
         ax.scatter([p[0] for p in positions.values()], [p[1] for p in positions.values()], s=500, alpha=0.5)
+        if self.path is not None:
+            ax.scatter(self.path[:,0], self.path[:,1], s=500, alpha=0.5, color=[0,1,0])
+
         for node, pos in positions.items():
             ax.text(pos[0], pos[1], node)
 
@@ -178,12 +190,11 @@ class DirectedGraph:
 
 
 graph = DirectedGraph()
-waypoints=[(1,1), (20, 20), (20, 2), (2,20), (1,1)]
+waypoints=[(1,1), (40, 40), (40, 2), (2,40), (1,1)]
 graph.add_waypoints(waypoints)
-graph.add_obstacle((6,6), 2, True, num_points=6, fos=1.5)
-graph.add_obstacle((13,13), 2, True, num_points=6, fos=1.5)
+graph.add_obstacle((10,10), 2, True, num_points=6, fos=1.5)
+graph.add_obstacle((30,30), 2, False, num_points=6, fos=1.5)
+graph.add_obstacle((10,30), 2, False, num_points=6, fos=1.5)
 
-# Sample path between 1,1 and 20,20
-print(graph.dijkstra((1,1),(20,20)))
-
+print(graph.dijkstra((1,1),(2,40)))
 graph.render()
