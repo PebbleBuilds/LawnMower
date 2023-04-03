@@ -22,6 +22,7 @@ def fisheye_distortion(intrinsics):
 IMG1 = None
 IMG2 = None
 
+# TODO initialize parameters properly
 INTRINSICS1 = None
 INTRINSICS2 = None
 
