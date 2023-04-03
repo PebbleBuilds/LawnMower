@@ -26,18 +26,20 @@ IMG2 = None
 INTRINSICS1 = None
 INTRINSICS2 = None
 
-K1 = camera_matrix(INTRINSICS1)
-K2 = camera_matrix(INTRINSICS2)
-D1 = fisheye_distortion(INTRINSICS1)
-D2 = fisheye_distortion(INTRINSICS2)
+# TODO initialize the following params with the streamed camera info, support arbitrary hardware
+K1 = [286.1167907714844, 0.0, 421.62689208984375, 0.0, 286.27880859375, 399.5252990722656, 0.0, 0.0, 1.0]
+
+K2 = [286.1825866699219, 0.0, 425.0535888671875, 0.0, 286.18560791015625, 398.7244873046875, 0.0, 0.0, 1.0]
+D1 = [-0.008292312733829021, 0.0453055202960968, -0.04263167083263397, 0.007736437954008579]
+D2 = [-0.00701235281303525, 0.04197357967495918, -0.03934945911169052, 0.006663409061729908]
 
 # extrinsics
 R = None
 T = None
 R1 = np.eye(3)
-R2 = R
+R2 = R 
 
-H, W = 480, 848
+H, W = 800, 848
 
 # TODO put params in launch file
 min_disp = 0
@@ -69,6 +71,7 @@ stereo_size = (stereo_width_px, stereo_height_px)
 stereo_cx = (stereo_height_px - 1) / 2.0 + max_disp
 stereo_cy = (stereo_height_px - 1) / 2.0
 
+# [286.1167907714844, 0.0, 421.62689208984375, 0.0, 0.0, 286.27880859375, 399.5252990722656, 0.0, 0.0, 0.0, 1.0, 0.0]
 P1 = np.array(
     [
         [stereo_focal_px, 0, stereo_cx, 0],
@@ -76,6 +79,8 @@ P1 = np.array(
         [0, 0, 1, 0],
     ]
 )
+
+# [286.1825866699219, 0.0, 425.0535888671875, -18.2928466796875, 0.0, 286.18560791015625, 398.7244873046875, -0.01925480365753174, 0.0, 0.0, 1.0, 0.0]
 P2 = P1.copy()
 P2[0, 3] = T[0] * stereo_focal_px
 
