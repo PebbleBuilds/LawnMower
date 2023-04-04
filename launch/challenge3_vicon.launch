@@ -11,12 +11,5 @@
     <!-- TODO add toggle for subscribing to vicon vs querying vicon -->
     <node pkg="LawnMower" type="challenge_3.py" name="challenge_3" output="screen" />
     <!-- Launch vicon bridge node -->
-    <node pkg="LawnMower" type="vicon2pixhawk_node.py" name="vicon_bridge" output="screen">
-        <param name="vicon_topic" value="/vicon/ROB498_Drone/ROB498_Drone" />
-        <param name="pixhawk_topic" value="/mavros/vision_pose/pose" />
-        <param name="group_name" value="$(arg group_name)" />
-    </node>
-    <!-- launch vicon transform node -->
-    <node pkg="tf" type="static_transform_publisher" name="tf_baseLink_vicon"
-        args="0 0 0 0 0 0 base_link vicon 1000" />
+    
 </launch>

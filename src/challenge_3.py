@@ -64,7 +64,7 @@ def comm_node():
     srv_abort = rospy.Service(name + "/comm/abort", Empty, callback_abort)
     # subscribers
     sub_waypoints = rospy.Subscriber(
-        "/" + name + "/comm/waypoints", PoseArray, callback_waypoints
+        "" + name + "/comm/waypoints", PoseArray, callback_waypoints
     )
     rospy.Subscriber(
         "/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback_vicon
