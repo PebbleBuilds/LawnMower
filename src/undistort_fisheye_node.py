@@ -15,9 +15,13 @@ CAMERA_INFO_PUB = None
 
 MAPX = None
 MAPY = None
+K = None
+D = None
 
 BRIDGE = CvBridge()
 
+WINDOW = cv2.namedWindow("undistorted", cv2.WINDOW_NORMAL)
+WINDOW2 = cv2.namedWindow("distorted", cv2.WINDOW_NORMAL)
 
 def img_cb(msg):
     if MAPX is None or MAPY is None or UNDISTORT_PUB is None or CAMERA_INFO_PUB is None:
@@ -36,11 +40,15 @@ def img_cb(msg):
 
 
 def camera_info_cb(msg):
-    global MAPX, MAPY
+    global MAPX, MAPY, K, D
     if MAPX is None:
         # don't rectify
+        K = np.array(msg.K).reshape(3,3)
+        D = np.array(msg.D)
+        R = np.array(msg.R).reshape(3,3)
+        P = np.array(msg.P).reshape(3,4)
         MAPX, MAPY = cv2.fisheye.initUndistortRectifyMap(
-            np.array(msg.K).reshape(3,3), msg.D, R=np.eye(3), P=np.eye(3), size=IMG_SIZE_WH, m1type=cv2.CV_32FC1
+            K, D, R, P, size=STEREO_SIZE_WH, m1type=cv2.CV_32FC1
         )
     msg.distortion_model = "plumb_bob"
     msg.D = [0, 0, 0, 0, 0]

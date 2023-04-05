@@ -6,9 +6,9 @@
         <remap from="undistorted/camera_info" to="/camera/left/camera_info" />
     </node>
 
-    <!-- <remap from="/fisheye/image_raw" to="/camera/fisheye2/image_raw" />
-    <remap from="/fisheye/camera_info" to="/camera/fisheye2/camera_info" />
-    <remap from="undistorted/image_raw" to="/camera/right/image_raw" /> 
-    <remap from="undistorted/camera_info" to="/camera/right/camera_info" />
-    <node pkg="LawnMower" type="undistort_fisheye_node.py" name="undistort_right" output="screen" /> -->
+    <node pkg="LawnMower" type="undistort_fisheye_node.py" name="undistort_right" output="screen" ns="right">
+        <remap from="fisheye/image_raw" to="/camera/fisheye2/image_raw" />
+        <remap from="fisheye/camera_info" to="/camera/fisheye2/camera_info" />
+        <remap from="undistorted/image_raw" to="/camera/right/image_raw" />
+        <remap from="undistorted/camera_info" to="/camera/right/camera_info" />
 </launch>
