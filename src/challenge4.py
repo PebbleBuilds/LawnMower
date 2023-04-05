@@ -6,7 +6,6 @@ from geometry_msgs.msg import PoseArray, PoseStamped, TransformStamped
 from std_srvs.srv import Empty, EmptyResponse
 
 from constants import *
-from pose_utils import create_posestamped, pose2np
 from waypoint_follower import WaypointFollower
 
 WF = None
@@ -40,9 +39,6 @@ def callback_pose(msg):
     WF.update_pose(msg)
 
 
-def callback_vicon(msg):
-    WF.set_vicon_tf(msg.transform)
-
 
 def callback_waypoints(msg):
     WF.set_waypoints(msg.poses)
@@ -69,7 +65,6 @@ def comm_node():
     srv_abort = rospy.Service(ABORT_TOPIC, Empty, callback_abort)
     # subscribers
     sub_waypoints = rospy.Subscriber(WAYPOINTS_TOPIC, PoseArray, callback_waypoints)
-    rospy.Subscriber(VICON_POSE_TOPIC, TransformStamped, callback_vicon)
     rospy.Subscriber(MAVROS_POSE_TOPIC, PoseStamped, callback_pose)
     # publishers
     sp_pub = rospy.Publisher(
