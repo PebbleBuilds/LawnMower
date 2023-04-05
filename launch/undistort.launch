@@ -11,4 +11,5 @@
         <remap from="fisheye/camera_info" to="/camera/fisheye2/camera_info" />
         <remap from="undistorted/image_raw" to="/camera/right/image_raw" />
         <remap from="undistorted/camera_info" to="/camera/right/camera_info" />
+    </node>
 </launch>

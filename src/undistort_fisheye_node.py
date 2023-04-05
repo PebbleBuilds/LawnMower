@@ -34,9 +34,11 @@ def img_cb(msg):
         interpolation=cv2.INTER_LINEAR,
         borderMode=cv2.BORDER_CONSTANT,
     )
-    UNDISTORT_PUB.publish(
-        BRIDGE.cv2_to_imgmsg(img_undistorted, encoding="passthrough")
-    )
+    # convert from mono8 to bgr8
+    img_undistorted = cv2.cvtColor(img_undistorted, cv2.COLOR_GRAY2BGR)
+    output_msg = BRIDGE.cv2_to_imgmsg(img_undistorted, encoding="bgr8")
+    output_msg.header = msg.header
+    UNDISTORT_PUB.publish(output_msg)
 
 
 def camera_info_cb(msg):
