@@ -1,37 +1,36 @@
 #!/usr/bin/env python
-# TODO account for offset from vicon markers to pixhawk center
 
 import numpy as np
 import rospy
-from geometry_msgs.msg import PoseArray, Pose, PoseStamped, TransformStamped
+from geometry_msgs.msg import PoseArray, PoseStamped, TransformStamped
 from std_srvs.srv import Empty, EmptyResponse
 from waypoint_follower import WaypointFollower
-from pose_utils import create_posestamped, posestamped2np
+from pose_utils import create_posestamped, pose2np
 
-WF = WaypointFollower(radius=0.5, hold_time=2, launch_height=1, waypoints=None)
+WF = WaypointFollower(radius=0.5, hold_time=1, launch_height=1, waypoints=None, dance=True, dance_size=0.35)
 
 
 # Service callbacks
 def callback_launch(request):
-    print("Launch Requested.")
+    rospy.loginfo("Launch Requested.")
     WF.set_state("Launch")
     return EmptyResponse()
 
 
 def callback_test(request):
-    print("Test Requested.")
+    rospy.loginfo("Test Requested.")
     WF.set_state("Test")
     return EmptyResponse()
 
 
 def callback_land(request):
-    print("Land Requested.")
+    rospy.loginfo("Land Requested.")
     WF.set_state("Land")
     return EmptyResponse()
 
 
 def callback_abort(request):
-    print("Abort Requested.")
+    rospy.loginfo("Abort Requested.")
     WF.set_state("Abort")
     return EmptyResponse()
 
@@ -39,14 +38,16 @@ def callback_abort(request):
 def callback_pose(msg):
     WF.update_pose(msg)
 
+
 def callback_vicon(msg):
     WF.set_vicon_tf(msg.transform)
+
 
 def callback_waypoints(msg):
     # convert waypoints to numpy array
     WAYPOINTS = np.empty((len(msg.poses), 3))
     for i, pose in enumerate(msg.poses):
-        WAYPOINTS[i] = posestamped2np(pose)
+        WAYPOINTS[i] = pose2np(pose)
     # TODO compensate for offset between vicon markers and pixhawk center
     WF.set_waypoints(WAYPOINTS)
 
@@ -63,16 +64,17 @@ def comm_node():
     srv_abort = rospy.Service(name + "/comm/abort", Empty, callback_abort)
     # subscribers
     sub_waypoints = rospy.Subscriber(
-        name + "/comm/waypoints", PoseArray, callback_waypoints
+        "" + name + "/comm/waypoints", PoseArray, callback_waypoints
     )
-    rospy.Subscriber("/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback_vicon)
+    rospy.Subscriber(
+        "/vicon/ROB498_Drone/ROB498_Drone", TransformStamped, callback_vicon
+    )
     rospy.Subscriber("/mavros/local_position/pose", PoseStamped, callback_pose)
     # publishers
     sp_pub = rospy.Publisher(
         "/mavros/setpoint_position/local", PoseStamped, queue_size=1
     )
-    
-    print("Services, subscribers, publishers initialized")
+    rospy.loginfo("Services, subscribers, publishers initialized")
 
     while not rospy.is_shutdown():
         setpoint = WF.get_setpoint()
