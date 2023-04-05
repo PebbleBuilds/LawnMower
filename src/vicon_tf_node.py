@@ -15,7 +15,7 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         try:
             trans = tf_buffer.lookup_transform(
-                DRONE_ORIGIN_FRAME_ID, VICON_ORIGIN_FRAME_ID, rospy.Time()
+                LOCAL_ORIGIN_FRAME_ID, VICON_ORIGIN_FRAME_ID, rospy.Time()
             )
             last_trans = trans
         except (

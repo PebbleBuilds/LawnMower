@@ -13,31 +13,26 @@ WF = None
 # Service callbacks
 def callback_launch(request):
     rospy.loginfo("Launch Requested.")
-    WF.set_state("Launch")
+    WF.set_state(LAUNCH)
     return EmptyResponse()
 
 
 def callback_test(request):
     rospy.loginfo("Test Requested.")
-    WF.set_state("Test")
+    WF.set_state(TEST)
     return EmptyResponse()
 
 
 def callback_land(request):
     rospy.loginfo("Land Requested.")
-    WF.set_state("Land")
+    WF.set_state(LAND)
     return EmptyResponse()
 
 
 def callback_abort(request):
     rospy.loginfo("Abort Requested.")
-    WF.set_state("Abort")
+    WF.set_state(ABORT)
     return EmptyResponse()
-
-
-def callback_pose(msg):
-    WF.update_pose(msg)
-
 
 
 def callback_waypoints(msg):
@@ -59,22 +54,20 @@ def comm_node():
         dance_size=0.35,
     )
     # services
-    srv_launch = rospy.Service(LAUNCH_TOPIC, Empty, callback_launch)
-    srv_test = rospy.Service(TEST_TOPIC, Empty, callback_test)
-    srv_land = rospy.Service(LAND_TOPIC, Empty, callback_land)
-    srv_abort = rospy.Service(ABORT_TOPIC, Empty, callback_abort)
+    rospy.Service(LAUNCH_TOPIC, Empty, callback_launch)
+    rospy.Service(TEST_TOPIC, Empty, callback_test)
+    rospy.Service(LAND_TOPIC, Empty, callback_land)
+    rospy.Service(ABORT_TOPIC, Empty, callback_abort)
     # subscribers
-    sub_waypoints = rospy.Subscriber(WAYPOINTS_TOPIC, PoseArray, callback_waypoints)
-    rospy.Subscriber(MAVROS_POSE_TOPIC, PoseStamped, callback_pose)
+    rospy.Subscriber(WAYPOINTS_TOPIC, PoseArray, callback_waypoints)
     # publishers
-    sp_pub = rospy.Publisher(
-        MAVROS_SETPOINT_TOPIC, PoseStamped, queue_size=1
-    )
+    sp_pub = rospy.Publisher(MAVROS_SETPOINT_TOPIC, PoseStamped, queue_size=1)
     rospy.loginfo("Services, subscribers, publishers initialized")
 
     while not rospy.is_shutdown():
         setpoint = WF.get_setpoint()
-        sp_pub.publish(setpoint)
+        if setpoint is not None:
+            sp_pub.publish(setpoint)
         rospy.sleep(0.2)
 
 

@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
+NAME = "rob498_drone_02"
+
 # States
 LAUNCH = 0
 TEST = 1
 LAND = 2
 ABORT = 3
 
+# frame_ids
 VICON_ORIGIN_FRAME_ID = "/vicon/world"
-VICON_DRONE_FRAME_ID = "/vicon/ROB498_Drone/ROB498_Drone"
-DRONE_ORIGIN_FRAME_ID = "map"
-DRONE_FRAME_ID= "local_position"
-
-NAME = "rob498_drone_02"
+DRONE_FRAME_ID = "/vicon/ROB498_Drone/ROB498_Drone"
+LOCAL_ORIGIN_FRAME_ID = "map"
 
 # Service topics
 LAUNCH_TOPIC = "/{}/launch".format(NAME)

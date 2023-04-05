@@ -2,7 +2,9 @@
 import rospy
 import tf2_ros
 from geometry_msgs.msg import PoseStamped, TransformStamped
+
 from constants import *
+
 POSE = None
 
 
@@ -21,7 +23,7 @@ if __name__ == "__main__":
     rate = rospy.Rate(10.0)
 
     drone_tf = TransformStamped()
-    drone_tf.header.frame_id = DRONE_ORIGIN_FRAME_ID
+    drone_tf.header.frame_id = LOCAL_ORIGIN_FRAME_ID
     drone_tf.child_frame_id = DRONE_FRAME_ID
 
     while not rospy.is_shutdown():

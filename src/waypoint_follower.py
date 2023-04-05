@@ -4,9 +4,10 @@
 
 import numpy as np
 import rospy
-import tf
+import tf2_ros
 
-from pose_utils import create_posestamped, posestamped2np, pose2np
+from pose_utils import create_posestamped, posestamped2np, tfstamped2posestamped
+from constants import *
 
 
 class WaypointFollower:
@@ -17,99 +18,136 @@ class WaypointFollower:
         launch_height=1,
         waypoints=None,
     ):
-        self.global_waypoint_idx = 0
         self.waypoints_received = False
         if waypoints is not None:
             self.set_waypoints(waypoints)
         self.radius = radius
         self.hold_time = hold_time
-        self.state = "Init"  # Launch, Test, Land, Abort, Init
+        self.state = LAND
 
-        self.current_pose = create_posestamped([0, 0, 0])
+        # initialize setpoints
+        self.origin_setpoint = create_posestamped(
+            [0, 0, 0],
+            orientation=[0, 0, -0.7071068, 0.7071068],  # checkerboard wall
+            frame_id=VICON_ORIGIN_FRAME_ID,
+        )
 
-        self.origin_setpoint = create_posestamped([0, 0, 0])
+        self.launch_setpoint = create_posestamped(
+            [0, 0, launch_height],
+            orientation=[0, 0, -0.7071068, 0.7071068],  # checkerboard wall
+            frame_id=VICON_ORIGIN_FRAME_ID,
+        )
 
-        self.setpoint = create_posestamped([0, 0, 0])
-        self.launch_height = launch_height
-        self.test_initialized = False
+        # tf buffer and listener
+        self.tf_buffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.listener = tf.TransformListener()
         # initialize timers and waypoint index
         self.global_waypoint_idx = 0
-        self.start_time = None
-        self.test_initialized = True
+        self.dance_waypoint_idx = 0
+        self.waypoint_arrival_time = None
+
+        self.last_setpoint_world = self.origin_setpoint
 
     def set_waypoints(self, waypoints):
-
         if self.waypoints_received:
             return
-        print("Setting waypoints:", waypoints)
+        print("Setting waypoints: \n", waypoints)
         # convert from vicon_world frame to vicon_inertial frame
-        waypoints_aug = np.matmul(self.H_vi, waypoints_aug.T)  # [4, num_waypoints]
-        waypoints_aug = waypoints_aug.T  # [num_waypoints, 4]
-
-        self.waypoints = waypoints_aug[:, :3]
-        print("Transformed wapoints: ", self.waypoints)
+        self.waypoints_world = waypoints
         self.waypoints_received = True
 
     def set_state(self, state):
-        assert state in ["Launch", "Test", "Land", "Abort", "Init"], (
-            "Invalid state " + state
-        )
+        assert state in [LAUNCH, TEST, LAND, ABORT], "Invalid state " + state
         self.state = state
-
-    def update_pose(self, drone_pose):
-        self.current_pose = drone_pose
 
     def get_setpoint(self):
         # print("State: " + self.state)
         if self.state == "Launch":
             # set setpoint to point above origin
-            self.setpoint = self.origin_setpoint
-            self.setpoint.pose.position.z = self.launch_height
+            setpoint_world = self.origin_setpoint
+            setpoint_world.pose.position.z = self.launch_height
         elif self.state == "Test":
             if not self.waypoints_received:
-                print("Waiting for waypoints")
-                return self.setpoint
-            return self.handle_test()
+                rospy.loginfo("Waiting for waypoints")
+                setpoint_world = self.last_setpoint_world
+            else:
+                setpoint_world = self.handle_test()
         elif self.state == "Land":
             # set setpoint to origin
-            self.setpoint = self.origin_setpoint
+            setpoint_world = self.origin_setpoint
         elif self.state == "Abort":
-            self.setpoint = self.origin_setpoint
-            self.setpoint.pose.position.x = self.current_pose.pose.position.x
-            self.setpoint.pose.position.y = self.current_pose.pose.position.y
-        elif self.state == "Init":
-            self.setpoint = self.origin_setpoint
+            setpoint_world = self.get_current_pose_world()
+            if setpoint_world is None:
+                setpoint_world = self.last_setpoint_world
+            # bring drone down
+            setpoint_world.pose.position.z = 0
         else:
-            print("Invalid state. Landing drone.")
+            rospy.loginfo("Invalid state. Landing drone.")
             self.state = "Land"
-            self.setpoint = self.origin_setpoint
-        return self.setpoint
+            setpoint_world = self.origin_setpoint
+        # convert pose to local frame
+        self.last_setpoint_world = setpoint_world
+        setpoint_local = self.world2local(setpoint_world)
+        return setpoint_local
+
+    def get_current_pose_world(self):
+        try:
+            t = self.listener.lookupTransform(
+                VICON_ORIGIN_FRAME_ID, DRONE_FRAME_ID, rospy.Time(0)
+            )
+            return tfstamped2posestamped(t)
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            rospy.loginfo(
+                "Waiting for transform from vicon to local origin. Returning last setpoint."
+            )
+            return None
+
+    def world2local(self, pose):
+        try:
+            pose_local = self.tf_buffer.transform(pose, LOCAL_ORIGIN_FRAME_ID)
+            return pose_local
+        except (
+            tf2_ros.LookupException,
+            tf2_ros.ConnectivityException,
+            tf2_ros.ExtrapolationException,
+        ):
+            rospy.loginfo(
+                "Waiting for transform from vicon to local origin. Returning last setpoint."
+            )
+            return self.last_setpoint_world
 
     def handle_test(self):
+        # TODO reimplement dancing
         # check distance to current waypoint
         dist = np.linalg.norm(
-            posestamped2np(self.current_pose)
-            - self.waypoints[self.global_waypoint_idx, :]
+            posestamped2np(self.get_current_pose_world())
+            - posestamped2np(self.waypoints_world[self.global_waypoint_idx])
         )
         # if within radius, increment timer
         if dist < self.radius and self.start_time is None:
-            print("starting timer on waypoint", self.global_waypoint_idx)
+            rospy.loginfo("starting timer on waypoint", self.global_waypoint_idx)
             self.start_time = rospy.get_time()
-            print(rospy.get_time())
         # if timer exceeds hold_time, increment waypoint
         if (
             self.start_time is not None
             and rospy.get_time() - self.start_time > self.hold_time
         ):
             self.global_waypoint_idx += 1
-            print("waypoint reached, indexing to next waypoint")
+            rospy.loginfo(
+                "waypoint {} reached, indexing to next waypoint".format(
+                    self.global_waypoint_idx
+                )
+            )
             # if waypoint index exceeds number of waypoints, reset to 0
-            if self.global_waypoint_idx >= self.waypoints.shape[0]:
+            if self.global_waypoint_idx >= self.waypoints_world.shape[0]:
                 self.global_waypoint_idx = 0
-                print("Waypoints complete. Resetting to first waypoint.")
+                rospy.loginfo("Waypoints complete. Resetting to first waypoint.")
             # reset timer
             self.start_time = None
-        self.setpoint = create_posestamped(self.waypoints[self.global_waypoint_idx, :])
-        return self.setpoint
+        setpoint = self.waypoints_world[self.global_waypoint_idx]
+        return setpoint
