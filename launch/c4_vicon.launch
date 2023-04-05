@@ -8,7 +8,7 @@
     </include>
     <node pkg="LawnMower" type="challenge4.py" name="challenge4" output="screen" />
 
-    <!-- Launch static transform publishers -->
-    <node pkg="tf" type="static_transform_publisher" name="tf_local2vicon  "
-        args="0 0 0 0 0 0 local_position /vicon/ROB498_Drone/ROB498_Drone 1000"/>
+    <!-- Launch transform publishers -->
+    <node pkg="LawnMower" type="vicon_tf_node.py" name="vicon_tf_node" output="screen" />
+    <node pkg="LawnMower" type="local_pos_tf_node.py" name="local_pos_tf_node" output="screen" />
 </launch>
