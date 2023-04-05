@@ -1,13 +1,13 @@
 <launch>
-    <remap from="/camera/fisheye1/image_raw" to="fisheye/image_raw" />
-    <remap from="/camera/fisheye1/camera_info" to="fisheye/camera_info" />
-    <remap from="undistorted/image_raw" to="/camera/left/image_raw" />
-    <remap from="undistorted/camera_info" to="/camera/left/camera_info" />
+    <remap from="/camera/fisheye1/image_raw" to="/fisheye/image_raw" />
+    <remap from="/camera/fisheye1/camera_info" to="/fisheye/camera_info" />
+    <remap from="/undistorted/image_raw" to="/camera/left/image_raw" />
+    <remap from="/undistorted/camera_info" to="/camera/left/camera_info" />
     <node pkg="LawnMower" type="undistort_fisheye_node.py" name="undistort_left" output="screen" />
 
-    <remap from="/camera/fisheye2/image_raw" to="fisheye/image_raw" />
-    <remap from="/camera/fisheye2/camera_info" to="fisheye/camera_info" />
-    <remap from="undistorted/image_raw" to="/camera/right/image_raw" />
-    <remap from="undistorted/camera_info" to="/camera/right/camera_info" />
+    <remap from="/camera/fisheye2/image_raw" to="/fisheye/image_raw" />
+    <remap from="/camera/fisheye2/camera_info" to="/fisheye/camera_info" />
+    <remap from="/undistorted/image_raw" to="/camera/right/image_raw" />
+    <remap from="/undistorted/camera_info" to="/camera/right/camera_info" />
     <node pkg="LawnMower" type="undistort_fisheye_node.py" name="undistort_right" output="screen" />
 </launch>
