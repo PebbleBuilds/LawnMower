@@ -50,12 +50,12 @@ def main():
     global UNDISTORT_PUB, CAMERA_INFO_PUB
     rospy.init_node("undistort_img_node")
     # subscribers
-    rospy.Subscriber("/fisheye/image_raw", Image, img_cb)
-    rospy.Subscriber("/fisheye/camera_info", CameraInfo, camera_info_cb)
+    rospy.Subscriber("fisheye/image_raw", Image, img_cb)
+    rospy.Subscriber("fisheye/camera_info", CameraInfo, camera_info_cb)
     # publishers
-    UNDISTORT_PUB = rospy.Publisher("/undistorted/image_raw", Image, queue_size=1)
+    UNDISTORT_PUB = rospy.Publisher("undistorted/image_raw", Image, queue_size=1)
     CAMERA_INFO_PUB = rospy.Publisher(
-        "/undistorted/camera_info", CameraInfo, queue_size=1
+        "undistorted/camera_info", CameraInfo, queue_size=1
     )
 
     while not rospy.is_shutdown():
