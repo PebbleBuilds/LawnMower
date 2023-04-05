@@ -9,28 +9,38 @@ import numpy as np
 from cv_bridge import CvBridge
 
 from constants import *
+import copy
 
-UNDISTORT_PUB = None
-CAMERA_INFO_PUB = None
+UNDISTORT_PUB1 = None
+CAMERA_INFO_PUB1 = None
+UNDISTORT_PUB2 = None
+CAMERA_INFO_PUB2 = None
 
-MAPX = None
-MAPY = None
-K = None
-D = None
+MAPX1 = None
+MAPY1 = None
+MAPX2 = None
+MAPY2 = None
+
+CAM_INFO1 = None
+CAM_INFO2 = None
 
 BRIDGE = CvBridge()
 
-WINDOW = cv2.namedWindow("undistorted", cv2.WINDOW_NORMAL)
-WINDOW2 = cv2.namedWindow("distorted", cv2.WINDOW_NORMAL)
 
-def img_cb(msg):
-    if MAPX is None or MAPY is None or UNDISTORT_PUB is None or CAMERA_INFO_PUB is None:
+def img_cb1(msg):
+    img_cb(msg, UNDISTORT_PUB1, MAPX1, MAPY1)
+
+def img_cb2(msg):
+    img_cb(msg, UNDISTORT_PUB2, MAPX2, MAPY2)
+
+def img_cb(msg, undistort_pub, mapx, mapy):
+    if mapx is None or mapy is None or undistort_pub is None:
         return
     img_distorted = BRIDGE.imgmsg_to_cv2(msg, desired_encoding="passthrough")
     img_undistorted = cv2.remap(
         img_distorted,
-        MAPX,
-        MAPY,
+        mapx,
+        mapy,
         interpolation=cv2.INTER_LINEAR,
         borderMode=cv2.BORDER_CONSTANT,
     )
@@ -38,39 +48,65 @@ def img_cb(msg):
     img_undistorted = cv2.cvtColor(img_undistorted, cv2.COLOR_GRAY2BGR)
     output_msg = BRIDGE.cv2_to_imgmsg(img_undistorted, encoding="bgr8")
     output_msg.header = msg.header
-    UNDISTORT_PUB.publish(output_msg)
+    undistort_pub.publish(output_msg)
 
-
-def camera_info_cb(msg):
-    global MAPX, MAPY, K, D
-    if MAPX is None:
-        # don't rectify
-        K = np.array(msg.K).reshape(3,3)
-        D = np.array(msg.D)
-        R = np.array(msg.R).reshape(3,3)
-        P = np.array(msg.P).reshape(3,4)
-        MAPX, MAPY = cv2.fisheye.initUndistortRectifyMap(
-            K, D, R, P, size=STEREO_SIZE_WH, m1type=cv2.CV_32FC1
-        )
+def camera_info_cb1(msg):
+    global CAM_INFO1
+    CAM_INFO1 = copy.deepcopy(msg)
     msg.distortion_model = "plumb_bob"
     msg.D = [0, 0, 0, 0, 0]
-    CAMERA_INFO_PUB.publish(msg)
+    camera_info_cb(msg, CAMERA_INFO_PUB1)
 
+def camera_info_cb2(msg):
+    global CAM_INFO2
+    CAM_INFO2 = copy.deepcopy(msg)
+    msg.distortion_model = "plumb_bob"
+    msg.D = [0, 0, 0, 0, 0]
+    camera_info_cb(msg, CAMERA_INFO_PUB2)
+
+def camera_info_cb(msg, camera_info_pub):
+    camera_info_pub.publish(msg)
+
+def init_maps():
+    global MAPX1, MAPY1, MAPX2, MAPY2
+    K1 = np.array(CAM_INFO1.K).reshape(3,3)
+    D1 = np.array(CAM_INFO1.D)
+    K2 = np.array(CAM_INFO2.K).reshape(3,3)
+    D2 = np.array(CAM_INFO2.D)
+    T = np.array([BASELINE, 0, 0]) # 64 mm baseline
+    R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(
+        K1, D1, K2, D2, STEREO_SIZE_WH, R=np.eye(3), T=T
+    )
+    MAPX1, MAPY1 = cv2.fisheye.initUndistortRectifyMap(
+        K1, D1, R1, P1, size=STEREO_SIZE_WH, m1type=cv2.CV_32FC1
+    )
+    MAPX2, MAPY2 = cv2.fisheye.initUndistortRectifyMap(
+        K2, D2, R2, P2, size=STEREO_SIZE_WH, m1type=cv2.CV_32FC1
+    )
+    rospy.loginfo("Initialized stereo rectification maps")
 
 def main():
-    global UNDISTORT_PUB, CAMERA_INFO_PUB
+    global UNDISTORT_PUB1, CAMERA_INFO_PUB1, UNDISTORT_PUB2, CAMERA_INFO_PUB2
     rospy.init_node("undistort_img_node")
     # subscribers
-    rospy.Subscriber("fisheye/image_raw", Image, img_cb)
-    rospy.Subscriber("fisheye/camera_info", CameraInfo, camera_info_cb)
+    rospy.Subscriber("/camera/fisheye1/image_raw", Image, img_cb1)
+    rospy.Subscriber("/camera/fisheye1/camera_info", CameraInfo, camera_info_cb1)
+    rospy.Subscriber("/camera/fisheye2/image_raw", Image, img_cb2)
+    rospy.Subscriber("/camera/fisheye2/camera_info", CameraInfo, camera_info_cb2)
     # publishers
-    UNDISTORT_PUB = rospy.Publisher("undistorted/image_raw", Image, queue_size=1)
-    CAMERA_INFO_PUB = rospy.Publisher(
-        "undistorted/camera_info", CameraInfo, queue_size=1
+    UNDISTORT_PUB1 = rospy.Publisher("undistorted1/image_raw", Image, queue_size=1)
+    CAMERA_INFO_PUB1 = rospy.Publisher(
+        "undistorted1/camera_info", CameraInfo, queue_size=1
     )
-
+    UNDISTORT_PUB2 = rospy.Publisher("undistorted2/image_raw", Image, queue_size=1)
+    CAMERA_INFO_PUB2 = rospy.Publisher(
+        "undistorted2/camera_info", CameraInfo, queue_size=1
+    )
+    rate = rospy.Rate(10)
     while not rospy.is_shutdown():
-        rospy.spin()
+        if CAM_INFO1 is not None and CAM_INFO2 is not None:
+            init_maps()
+        rate.sleep()
 
 
 if __name__ == "__main__":
