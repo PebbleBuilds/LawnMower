@@ -31,15 +31,16 @@ def img_cb(msg):
         borderMode=cv2.BORDER_CONSTANT,
     )
     UNDISTORT_PUB.publish(
-        BRIDGE.cv2_to_imgmsg(img_undistorted, desired_encoding="passthrough")
+        BRIDGE.cv2_to_imgmsg(img_undistorted, encoding="passthrough")
     )
 
 
 def camera_info_cb(msg):
     global MAPX, MAPY
     if MAPX is None:
+        # don't rectify
         MAPX, MAPY = cv2.fisheye.initUndistortRectifyMap(
-            msg.K, msg.D, size=IMG_SIZE_WH, m1type=cv2.CV_32FC1
+            np.array(msg.K).reshape(3,3), msg.D, R=np.eye(3), P=np.eye(3), size=IMG_SIZE_WH, m1type=cv2.CV_32FC1
         )
     msg.distortion_model = "plumb_bob"
     msg.D = [0, 0, 0, 0, 0]
