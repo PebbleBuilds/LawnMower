@@ -1,10 +1,13 @@
 <launch>
+    <!-- Start a nodelet manager; the name must be unqualified here -->
+    <node pkg="nodelet" type="nodelet" name="pipeline" args="manager" />
+    <include file="$(find LawnMower)/launch/undistort.launch" />
     <include ns="camera" file="$(find stereo_image_proc)/launch/stereo_image_proc.launch">
-        <arg name="left" value="fisheye1" />
-        <arg name="right" value="image_raw" />
+        <arg name="manager" value="pipeline" />
+        <arg name="approximate_sync" value="false" />
     </include>
-    <node pkg="image_view" type="stereo_view" name="image_view" args="stereo:=/camera image:=image_rect" />
-    <!-- start rviz -->
-    <node pkg="rviz" type="rviz" name="rviz" />
+    <!-- <node pkg="image_view" type="stereo_view" name="image_view" args="stereo:=/camera" /> -->
+    <!-- <node pkg="rviz" type="rviz" name="rviz" /> -->
+
     <include file="$(find px4_realsense_bridge)/launch/bridge.launch" />
 </launch>
