@@ -6,29 +6,23 @@ import cv2
 import numpy as np
 from cv_bridge import CvBridge
 
+from constants import *
 
-H, W = 800, 848
-img_size_WH = (W, H)
-# TODO initialize IMG1 and IMG2 to empty images
+class CameraInfo:
+    def __init__(self, msg):
+        self.height = msg.height
+        self.width = msg.width
+        self.distortion_model = msg.distortion_model
+        self.D = msg.D
+        self.K = msg.K
+        self.R = msg.R
+        self.P = msg.P
+        self.binning_x = msg.binning_x
+        self.binning_y = msg.binning_y
+        self.roi = msg.roi
+
 IMG1 = np.zeros((H, W, 3), dtype=np.uint8)
 IMG2 = np.zeros((H, W, 3), dtype=np.uint8)
-
-
-# TODO initialize the following params with the streamed camera info, support arbitrary hardware
-# Camera intrinsics
-K1 = np.array([
-    286.1167907714844,  0.0,                421.62689208984375, 
-    0.0,                286.27880859375,    399.5252990722656, 
-    0.0,                0.0,                1.0
-]).reshape(3, 3)
-K2 = np.array([
-    286.1825866699219,  0.0,                425.0535888671875, 
-    0.0,                286.18560791015625, 398.7244873046875, 
-    0.0,                0.0,                1.0
-]).reshape(3, 3)
-# Distortion params
-D1 = np.array([-0.008292312733829021, 0.0453055202960968, -0.04263167083263397, 0.007736437954008579])
-D2 = np.array([-0.00701235281303525, 0.04197357967495918, -0.03934945911169052, 0.006663409061729908])
 
 
 # TODO put params in launch file
@@ -53,22 +47,6 @@ stereo = cv2.StereoBM_create(
     speckleRange=speckle_range,
 )
 
-# From camera infos
-R1 = np.eye(3)
-R2 = np.eye(3)
-P1 = np.array([
-    286.1167907714844,  0.0,                421.62689208984375, 0.0,
-    0.0,                286.27880859375,    399.5252990722656,  0.0, 
-    0.0,                0.0,                1.0,                0.0
-]).reshape(3, 4)
-P2 = np.array([
-    286.1825866699219,  0.0,                425.0535888671875,  -18.2928466796875, 
-    0.0,                286.18560791015625, 398.7244873046875,  -0.01925480365753174, 
-    0.0,                0.0,                1.0,                0.0
-]).reshape(3, 4)
-
-T = np.zeros(3)
-T[0] = -P2[0, 3] / P2[0, 0] # 64 mm baseline
 
 m1type = cv2.CV_32FC1
 map1x, map1y = cv2.fisheye.initUndistortRectifyMap(
@@ -83,21 +61,34 @@ frame_mutex = Lock()
 bridge = CvBridge()
 
 
-def callback_fisheye1(msg):
+def img1_cb(msg):
     global IMG1    
     IMG1 = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
 
 
-def callback_fisheye2(msg):
+def img2_cb(msg):
     global IMG2
     IMG2 = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
 
+def img1_param_cb(msg):
+    global K1, D1
+    K1 = np.array(msg.K).reshape(3, 3)
+    D1 = np.array(msg.D)
+
+def img2_param_cb(msg):
+    global K2, D2
+    K2 = np.array(msg.K).reshape(3, 3)
+    D2 = np.array(msg.D)
 
 def main():
     rospy.init_node("t265_stereo_node")
     # subscribers
-    rospy.Subscriber("/camera/fisheye1/image_raw", Image, callback_fisheye1)
-    rospy.Subscriber("/camera/fisheye2/image_raw", Image, callback_fisheye2)
+    rospy.Subscriber("/camera/fisheye1/image_raw", Image, img1_cb)
+    rospy.Subscriber("/camera/fisheye2/image_raw", Image, img2_cb)
+    # TODO update callbacks to use CameraInfo
+    rospy.Subscriber("/camera/fisheye1/camera_info", , img1_param_cb)
+    rospy.Subscriber("/camera/fisheye2/camera_info", , img2_param_cb)
+
     # assume that the fisheye cameras are synchronized
 
     # publishers
@@ -107,7 +98,6 @@ def main():
     while not rospy.is_shutdown():
         # obtain images
         frame_mutex.acquire()
-        # TODO convert IMG1 and IMG2 to cv2 images from ROS
         img1 = IMG1.copy()
         img2 = IMG2.copy()
         header = IMG1.header
@@ -132,7 +122,7 @@ def main():
         cv2.waitKey(1)
         
         # project disparity to 3D
-        # points = cv2.reprojectImageTo3D(disparity, Q)
+        # points = cv2.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
         
         # # convert to correct msg type
         # pub_msg = Image()
