@@ -1,0 +1,10 @@
+<launch>
+    <!-- Start a nodelet manager; the name must be unqualified here -->
+    <include file="$(find px4_realsense_bridge)/launch/bridge.launch" />
+    <include file="$(find LawnMower)/launch/undistort.launch" />
+    <node ns="camera" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" output="screen">
+        <param name="disparity_range" value="32" />
+        <param name="speckle_size" value="1000" />
+        <param name="approximate_sync" value="true" />
+    </node>
+</launch>

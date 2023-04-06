@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="image_view" type="stereo_view" name="image_view" args="stereo:=camera image:=image_rect" />
+    <node pkg="rviz" type="rviz" name="rviz" />
+</launch>
