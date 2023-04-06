@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import numpy as np
 NAME = "rob498_drone_02"
 
 # States
@@ -31,3 +31,14 @@ IMG_SIZE_WH = (W, H)
 DOWNSCALE = 2
 STEREO_SIZE_WH = (W//DOWNSCALE, H//DOWNSCALE)
 BASELINE = -18.2928466796875/286.1825866699219 # 64 mm baseline
+
+# obstacle parameters
+OBSTACLE_RADIUS = 0.3 # meters
+OBSTACLE_HEIGHT = 2.0 # meters
+NUM_OBSTACLES = 4
+INITIAL_OBSTACLE_POSITIONS = np.array([
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0],
+    [0.0, 0.0]
+])
