@@ -1,5 +1,5 @@
 <launch>
-    <node pkg="LawnMower" type="undistort_fisheye_node.py" name="undistort" output="screen" ns="left">
+    <node pkg="LawnMower" type="undistort_fisheye_node.py" name="undistort" output="screen">
         <remap from="undistorted1/image_raw" to="/camera/left/image_raw" />
         <remap from="undistorted1/camera_info" to="/camera/left/camera_info" />
         <remap from="undistorted2/image_raw" to="/camera/right/image_raw" />
