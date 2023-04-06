@@ -44,10 +44,13 @@ def img_cb(msg, undistort_pub, mapx, mapy):
         interpolation=cv2.INTER_LINEAR,
         borderMode=cv2.BORDER_CONSTANT,
     )
-    # downscale
-    img_undistorted = cv2.resize(
-        img_undistorted, STEREO_SIZE_WH, interpolation=cv2.INTER_AREA
-    )
+    # crop top and bottom based on DOWNSCALE_H
+    orig_height = img_undistorted.shape[0]
+    new_height = orig_height//DOWNSCALE_H
+    # take center of image of new height
+    img_undistorted = img_undistorted[
+        (orig_height - new_height)//2 : (orig_height + new_height)//2, :
+    ]
     # convert from mono8 to bgr8
     img_undistorted = cv2.cvtColor(img_undistorted, cv2.COLOR_GRAY2BGR)
     output_msg = BRIDGE.cv2_to_imgmsg(img_undistorted, encoding="bgr8")
@@ -65,11 +68,15 @@ def camera_info_cb2(msg):
     camera_info_cb(msg, CAMERA_INFO_PUB2)
 
 def camera_info_cb(msg, camera_info_pub):
+    if camera_info_pub is None:
+        return
     msg.distortion_model = "plumb_bob"
     msg.D = [0, 0, 0, 0, 0]
-    msg.K = [msg.K[0]/DOWNSCALE, 0, msg.K[2]/DOWNSCALE, 
-             0, msg.K[4]/DOWNSCALE, msg.K[5]/DOWNSCALE,
-               0, 0, 1]
+    # downscale K and P
+    msg.K = list(msg.K)
+    msg.K[5] = msg.K[5]/DOWNSCALE_H # optical center
+    msg.P = list(msg.P)
+    msg.P[6] = msg.P[6]/DOWNSCALE_H # optical center
     camera_info_pub.publish(msg)
 
 def init_maps():
