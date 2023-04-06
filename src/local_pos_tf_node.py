@@ -25,10 +25,11 @@ if __name__ == "__main__":
     drone_tf = TransformStamped()
     drone_tf.header.frame_id = LOCAL_ORIGIN_FRAME_ID
     drone_tf.child_frame_id = DRONE_FRAME_ID
-
+    rate = rospy.Rate(10.0)
     while not rospy.is_shutdown():
         if POSE is None:
             rospy.loginfo("Waiting for drone local pose")
+            rate.sleep()
             continue
         drone_tf.header.stamp = POSE.header.stamp
         drone_tf.transform.translation.x = POSE.pose.position.x
@@ -36,4 +37,4 @@ if __name__ == "__main__":
         drone_tf.transform.translation.z = POSE.pose.position.z
         drone_tf.transform.rotation = POSE.pose.orientation
         br.sendTransform(drone_tf)
-        rospy.spin()
+        rate.sleep()
