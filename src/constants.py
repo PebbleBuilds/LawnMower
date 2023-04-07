@@ -28,8 +28,8 @@ MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
 # stereo camera constants
 H, W = 800, 848
 IMG_SIZE_WH = (W, H)
-DOWNSCALE = 2
-STEREO_SIZE_WH = (W//DOWNSCALE, H//DOWNSCALE)
+DOWNSCALE_H = 8
+STEREO_SIZE_WH = (W, H//DOWNSCALE_H)
 BASELINE = -18.2928466796875/286.1825866699219 # 64 mm baseline
 
 # obstacle parameters
