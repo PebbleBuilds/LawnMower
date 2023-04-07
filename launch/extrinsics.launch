@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="tf" type="static_transform_publisher" name="tf_vicon_drone_base_link"
+        args="0 0 0 0 0 0 vicon/ROB498_Drone/ROB498_Drone base_link  1000"/>
+</launch>
