@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-
+"""
+Dedicated to Alex, who is the best.
+"""
 import rospy
 
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo, DisparityImage
+from message_filters import ApproximateTimeSynchronizer, Subscriber
 from threading import Lock
 import cv2
 import numpy as np
@@ -10,131 +13,154 @@ from cv_bridge import CvBridge
 
 from constants import *
 
-class CameraInfo:
-    def __init__(self, msg):
-        self.height = msg.height
-        self.width = msg.width
-        self.distortion_model = msg.distortion_model
-        self.D = msg.D
-        self.K = msg.K
-        self.R = msg.R
-        self.P = msg.P
-        self.binning_x = msg.binning_x
-        self.binning_y = msg.binning_y
-        self.roi = msg.roi
+STEREO_PUB = None
 
-IMG1 = np.zeros((H, W, 3), dtype=np.uint8)
-IMG2 = np.zeros((H, W, 3), dtype=np.uint8)
+MAPX1 = None
+MAPY1 = None
+MAPX2 = None
+MAPY2 = None
+
+BRIDGE = CvBridge()
+
+STEREO_BM = None
+
+Q = None
+
+VISUALIZE = False
+STEREO_WINDOW = cv2.namedWindow("stereo", cv2.WINDOW_NORMAL)
+IMG_RAW_WINDOW = cv2.namedWindow("raw", cv2.WINDOW_NORMAL)
+
+def stereo_cb(msg1, msg2):
+    if None in [MAPX1, MAPY1, MAPX2, MAPY2, STEREO_PUB, STEREO_BM]:
+        return
+    img_raw1 = BRIDGE.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
+    img_raw2 = BRIDGE.imgmsg_to_cv2(msg2, desired_encoding="passthrough")
+    img_undistorted1 = undistort_rectify(img_raw1, MAPX1, MAPY1)
+    img_undistorted2 = undistort_rectify(img_raw2, MAPX2, MAPY2)
+
+    # crop image for faster computation
+    orig_height = img_undistorted1.shape[0]
+    new_height = orig_height // DOWNSCALE_H  # 800//8 = 100
+    # take center of image of new height
+    img_crop1 = img_undistorted1[
+        (orig_height - new_height) // 2 : (orig_height + new_height) // 2, :
+    ]
+    img_crop2 = img_undistorted2[
+        (orig_height - new_height) // 2 : (orig_height + new_height) // 2, :
+    ]
+
+    # compute disparity, divide by DISP_SCALE, not sure what that means
+    disparity = STEREO_BM.compute(img_crop1, img_crop2).astype(np.float32) / 16.0
+
+    if VISUALIZE:
+        visualize_disparity(img_crop1, disparity)
+
+    # convert to disparity image message (untested)
+    disp_msg = DisparityImage()
+    disp_msg.header = msg1.header
+    disp_msg.image = BRIDGE.cv2_to_imgmsg(disparity, encoding="passthrough")
+    disp_msg.f = 1.0
+    disp_msg.T = BASELINE
+    disp_msg.min_disparity = 0.0  # see minDisparity in stereo_bm
+    disp_msg.max_disparity = 16  # see num_disparities in stereo_bm
+    disp_msg.delta_d = 1.0  # see disp12MaxDiff in stereo_bm
+
+    # publish disparity image
+    STEREO_PUB.publish(disp_msg)
 
 
-# TODO put params in launch file
-min_disp = 0
-max_disp = 16
-num_disp = max_disp - min_disp
-block_size = 21
-disp12_max_diff = 1
-uniqueness_ratio = 10
-speckle_window_size = 100
-speckle_range = 1
+def undistort_rectify(img, mapx, mapy):
+    img_undistorted = cv2.remap(
+        img,
+        mapx,
+        mapy,
+        interpolation=cv2.INTER_LINEAR,
+        borderMode=cv2.BORDER_CONSTANT,
+    )
+    return img_undistorted
 
 
-stereo = cv2.StereoBM_create(numDisparities=num_disp, blockSize=block_size)
+def camera_infos_cb(msg1, msg2):
+    global MAPX1, MAPY1, MAPX2, MAPY2, Q
+    if not None in [MAPX1, MAPY1, MAPX2, MAPY2]:
+        return
+    K1 = np.array(msg1.K).reshape(3, 3)
+    K2 = np.array(msg2.K).reshape(3, 3)
+    D1 = np.array(msg1.D)
+    D2 = np.array(msg2.D)
+    R1 = np.array(msg1.R).reshape(3, 3)
+    R2 = np.array(msg2.R).reshape(3, 3)
+    P1 = np.array(msg1.P).reshape(3, 4)
+    P2 = np.array(msg2.P).reshape(3, 4)
+    img_w, img_h = msg1.width, msg1.height  # (848, 800)
+    img_wh = (img_w, img_h)
+
+    # compute undistortion maps
+    MAPX1, MAPY1 = cv2.fisheye.initUndistortRectifyMap(
+        K1, D1, R1, P1, img_wh, cv2.CV_32FC1
+    )
+    MAPX2, MAPY2 = cv2.fisheye.initUndistortRectifyMap(
+        K2, D2, R2, P2, img_wh, cv2.CV_32FC1
+    )
+
+    T = np.zeros((3, 1))
+    # see https://github.com/IntelRealSense/librealsense/blob/master/wrappers/python/examples/t265_stereo.py#L197
+    # -18.2928466796875/286.1825866699219, computed from msg2.P[3]/msg2.P[0] ^^^
+    T[0] = BASELINE
+    # adjust K for cropped image
+    K1[1, 2] /= DOWNSCALE_H
+    K2[1, 2] /= DOWNSCALE_H
+
+    # compute Q for cropped image
+    _, _, _, _, Q, _, _ = cv2.fisheye.stereoRectify(K1, D1, K2, D2, img_wh, T)
 
 
-m1type = cv2.CV_32FC1
-map1x, map1y = cv2.fisheye.initUndistortRectifyMap(
-    K1, D1, R1, P1, img_size_WH, m1type
-)
-map2x, map2y = cv2.fisheye.initUndistortRectifyMap(
-    K2, D2, R2, P2, img_size_WH, m1type
-)
+def visualize_disparity(img_crop1, disparity):
+    # convert disparity to color image, divide by num disparities
+    disparity_color = cv2.applyColorMap(
+        cv2.convertScaleAbs(disparity, alpha=255 / 16.0), cv2.COLORMAP_JET
+    )
+    cv2.imshow("stereo", disparity_color)
+    cv2.imshow("raw", img_crop1)
+    cv2.waitKey(1)
 
-frame_mutex = Lock()
-
-bridge = CvBridge()
-
-
-def img1_cb(msg):
-    global IMG1    
-    IMG1 = msg
-
-
-def img2_cb(msg):
-    global IMG2
-    IMG2 = msg
-
-def img1_param_cb(msg):
-    global K1, D1
-    K1 = np.array(msg.K).reshape(3, 3)
-    D1 = np.array(msg.D)
-
-def img2_param_cb(msg):
-    global K2, D2
-    K2 = np.array(msg.K).reshape(3, 3)
-    D2 = np.array(msg.D)
 
 def main():
-    print("entered")
-    rospy.init_node("t265_stereo_node")
-    # subscribers
-    rospy.Subscriber("/camera/fisheye1/image_raw", Image, img1_cb)
-    rospy.Subscriber("/camera/fisheye2/image_raw", Image, img2_cb)
-    # TODO update callbacks to use CameraInfo
-    rospy.Subscriber("/camera/fisheye1/camera_info", , img1_param_cb)
-    rospy.Subscriber("/camera/fisheye2/camera_info", , img2_param_cb)
+    global STEREO_PUB, STEREO_BM
+    rospy.init_node("undistort_img_node")
+    num_disparities = rospy.get_param("~num_disparities", 16)
+    block_size = rospy.get_param("~block_size", 15)
+    STEREO_BM = cv2.StereoBM_create(
+        numDisparities=num_disparities, blockSize=block_size
+    )
 
-    # assume that the fisheye cameras are synchronized
+    # subscribers
+    tss_img = ApproximateTimeSynchronizer(
+        [
+            Subscriber("/camera/fisheye1/image_raw", Image),
+            Subscriber("/camera/fisheye2/image_raw", Image),
+        ],
+        10,  # queue size
+        0.05,  # expect 30 fps
+    )
+    tss_img.registerCallback(stereo_cb)
+    tss_cam_info = ApproximateTimeSynchronizer(
+        [
+            Subscriber("/camera/fisheye1/camera_info", CameraInfo),
+            Subscriber("/camera/fisheye2/camera_info", CameraInfo),
+        ],
+        10,  # queue size
+        0.05,  # expect 30 fps
+    )
+    tss_cam_info.registerCallback(camera_infos_cb)
 
     # publishers
-    stereo_pub = rospy.Publisher("/camera/stereo/image_raw", Image, queue_size=1)
-    print("Publishing stereo image on /camera/stereo/image_raw")
-    window_name = "DEBUG"
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    STEREO_PUB = rospy.Publisher(
+        "/camera/stereo/image_raw", DisparityImage, queue_size=10
+    )
+    rate = rospy.Rate(10)
     while not rospy.is_shutdown():
-        # obtain images
-        frame_mutex.acquire()
-        # TODO convert IMG1 and IMG2 to cv2 images from ROS
-        if IMG1 is None or IMG2 is None:
-            frame_mutex.release()
-            continue
-        img1 = bridge.imgmsg_to_cv2(IMG1, desired_encoding="passthrough").copy()
-        img2 = bridge.imgmsg_to_cv2(IMG2, desired_encoding="passthrough").copy()
-        header = IMG1.header
-        frame_mutex.release()
-        # undistort images, crop center of frames
-        img1 = cv2.remap(img1, map1x, map1y, interpolation=cv2.INTER_LINEAR)
-        img2 = cv2.remap(img2, map2x, map2y, interpolation=cv2.INTER_LINEAR)
-        # downscale img1, img2 by half
-        img1_small = cv2.resize(img1, downsized_img_size_WH)
-        img2_small = cv2.resize(img2, downsized_img_size_WH)
-        # compute disparity on the center of frames, convert to pixel disparity
-        disparity = stereo.compute(img1_small, img2_small).astype(np.float32) / 16.0
-        # scale back up disparity
-        disparity = cv2.resize(disparity, img_size_WH)
-        # recrop valid disparity
-        disparity = disparity[:, max_disp:]
-        # convert disparity to pixel intensitites
-        disparity = 255 * (disparity - min_disp) / num_disp
-        # convert to color
-        disp_vis = cv2.applyColorMap(
-            cv2.convertScaleAbs(disparity, 1), cv2.COLORMAP_JET
-        )
-
-        color_img = cv2.cvtColor(img1[:, max_disp:], cv2.COLOR_GRAY2BGR)
-
-        # publish debug image
-        cv2.imshow(window_name, np.hstack((color_img, disp_vis)))
-        cv2.waitKey(1)
-        
-        # project disparity to 3D
-        # points = cv2.reprojectImageTo3D(disparity, Q, handleMissingValues=True)
-        
-        # # convert to correct msg type
-        # pub_msg = Image()
-        # pub_msg = bridge.cv2_to_imgmsg(points, encoding="passthrough")
-        # pub_msg.header = header
-        # stereo_pub.publish(pub_msg)
-
+        rate.sleep()
 
 
 if __name__ == "__main__":
