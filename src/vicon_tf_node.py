@@ -15,7 +15,10 @@ if __name__ == "__main__":
     while not rospy.is_shutdown():
         try:
             trans = tf_buffer.lookup_transform(
-                LOCAL_ORIGIN_FRAME_ID, VICON_ORIGIN_FRAME_ID, rospy.Time()
+                VICON_ORIGIN_FRAME_ID, 
+                LOCAL_ORIGIN_FRAME_ID, 
+                rospy.Time(),
+                rospy.Duration(0, 1e8)
             )
             last_trans = trans
         except (
@@ -24,8 +27,9 @@ if __name__ == "__main__":
             tf2_ros.ExtrapolationException,
         ):
             if last_trans is None:
-                rospy.loginfo("Waiting for transform")
+                rospy.loginfo("Waiting for vicon transform")
             else:
                 # latch on to last known transform
+                last_trans.header.stamp = rospy.Time.now()
                 br.sendTransform(last_trans)
         rate.sleep()
