@@ -24,7 +24,7 @@ def create_posestamped(
     pose_stamped.pose.orientation.w = w_o
 
     pose_stamped.header.frame_id = frame_id
-    pose_stamped.header.stamp = rospy.Time.now()
+    pose_stamped.header.stamp = rospy.Time(0)
     return pose_stamped
 
 def tfstamped2posestamped(tfstamped):
