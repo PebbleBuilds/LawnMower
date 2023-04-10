@@ -20,12 +20,11 @@ if __name__ == "__main__":
     rospy.Subscriber(MAVROS_POSE_TOPIC, PoseStamped, update_transform)
 
     br = tf2_ros.TransformBroadcaster()
-    rate = rospy.Rate(10.0)
+    rate = rospy.Rate(100.0)
 
     drone2local_tf = TransformStamped()
     drone2local_tf.header.frame_id =  DRONE_FRAME_ID
     drone2local_tf.child_frame_id = LOCAL_ORIGIN_FRAME_ID
-    rate = rospy.Rate(10.0)
     while not rospy.is_shutdown():
         if POSE is None:
             rospy.loginfo("Waiting for drone local pose")

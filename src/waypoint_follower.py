@@ -95,7 +95,7 @@ class WaypointFollower:
 
     def get_current_pose_world(self):
         try:
-            t = self.listener.lookupTransform(
+            t = self.tf_buffer.lookup_transform(
                 VICON_ORIGIN_FRAME_ID, DRONE_FRAME_ID, rospy.Time(0)
             )
             return tfstamped2posestamped(t)
@@ -105,13 +105,13 @@ class WaypointFollower:
             tf2_ros.ExtrapolationException,
         ):
             rospy.loginfo(
-                "Waiting for transform from vicon to local origin. Returning last setpoint."
+                "Waiting for transform from vicon to drone. Returning last setpoint."
             )
             return None
 
     def world2local(self, pose):
         try:
-            pose_local = self.tf_buffer.transform(pose, LOCAL_ORIGIN_FRAME_ID)
+            pose_local = self.tf_buffer.transform(pose, LOCAL_ORIGIN_FRAME_ID, rospy.Duration(1))
             return pose_local
         except (
             tf2_ros.LookupException,
