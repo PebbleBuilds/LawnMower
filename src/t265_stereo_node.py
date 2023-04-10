@@ -4,7 +4,7 @@ Dedicated to Alex, who is the best.
 """
 import rospy
 
-from sensor_msgs.msg import Image, CameraInfo, DisparityImage
+from sensor_msgs.msg import Image, CameraInfo
 from message_filters import ApproximateTimeSynchronizer, Subscriber
 from threading import Lock
 import cv2
@@ -26,12 +26,12 @@ STEREO_BM = None
 
 Q = None
 
-VISUALIZE = False
+VISUALIZE = True
 STEREO_WINDOW = cv2.namedWindow("stereo", cv2.WINDOW_NORMAL)
 IMG_RAW_WINDOW = cv2.namedWindow("raw", cv2.WINDOW_NORMAL)
 
 def stereo_cb(msg1, msg2):
-    if None in [MAPX1, MAPY1, MAPX2, MAPY2, STEREO_PUB, STEREO_BM]:
+    if any([x is None for x in [MAPX1, MAPY1, MAPX2, MAPY2, STEREO_BM]]):
         return
     img_raw1 = BRIDGE.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
     img_raw2 = BRIDGE.imgmsg_to_cv2(msg2, desired_encoding="passthrough")
@@ -51,22 +51,21 @@ def stereo_cb(msg1, msg2):
 
     # compute disparity, divide by DISP_SCALE, not sure what that means
     disparity = STEREO_BM.compute(img_crop1, img_crop2).astype(np.float32) / 16.0
-
     if VISUALIZE:
         visualize_disparity(img_crop1, disparity)
 
-    # convert to disparity image message (untested)
-    disp_msg = DisparityImage()
-    disp_msg.header = msg1.header
-    disp_msg.image = BRIDGE.cv2_to_imgmsg(disparity, encoding="passthrough")
-    disp_msg.f = 1.0
-    disp_msg.T = BASELINE
-    disp_msg.min_disparity = 0.0  # see minDisparity in stereo_bm
-    disp_msg.max_disparity = 16  # see num_disparities in stereo_bm
-    disp_msg.delta_d = 1.0  # see disp12MaxDiff in stereo_bm
+    # # convert to disparity image message (untested)
+    # disp_msg = DisparityImage()
+    # disp_msg.header = msg1.header
+    # disp_msg.image = BRIDGE.cv2_to_imgmsg(disparity, encoding="passthrough")
+    # disp_msg.f = 1.0
+    # disp_msg.T = BASELINE
+    # disp_msg.min_disparity = 0.0  # see minDisparity in stereo_bm
+    # disp_msg.max_disparity = 16  # see num_disparities in stereo_bm
+    # disp_msg.delta_d = 1.0  # see disp12MaxDiff in stereo_bm
 
-    # publish disparity image
-    STEREO_PUB.publish(disp_msg)
+    # # publish disparity image
+    # STEREO_PUB.publish(disp_msg)
 
 
 def undistort_rectify(img, mapx, mapy):
@@ -82,7 +81,7 @@ def undistort_rectify(img, mapx, mapy):
 
 def camera_infos_cb(msg1, msg2):
     global MAPX1, MAPY1, MAPX2, MAPY2, Q
-    if not None in [MAPX1, MAPY1, MAPX2, MAPY2]:
+    if not any([x is None for x in [MAPX1, MAPY1, MAPX2, MAPY2]]):
         return
     K1 = np.array(msg1.K).reshape(3, 3)
     K2 = np.array(msg2.K).reshape(3, 3)
@@ -110,9 +109,10 @@ def camera_infos_cb(msg1, msg2):
     # adjust K for cropped image
     K1[1, 2] /= DOWNSCALE_H
     K2[1, 2] /= DOWNSCALE_H
+    R = np.eye(3)
 
     # compute Q for cropped image
-    _, _, _, _, Q, _, _ = cv2.fisheye.stereoRectify(K1, D1, K2, D2, img_wh, T)
+    _, _, _, _, Q,  = cv2.fisheye.stereoRectify(K1, D1, K2, D2, img_wh, R, T, 0)
 
 
 def visualize_disparity(img_crop1, disparity):
@@ -155,9 +155,9 @@ def main():
     tss_cam_info.registerCallback(camera_infos_cb)
 
     # publishers
-    STEREO_PUB = rospy.Publisher(
-        "/camera/stereo/image_raw", DisparityImage, queue_size=10
-    )
+    # STEREO_PUB = rospy.Publisher(
+    #     "/camera/stereo/image_raw", DisparityImage, queue_size=10
+    # )
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         rate.sleep()
