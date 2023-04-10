@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
         rot = quaternion_matrix([POSE.pose.orientation.x, POSE.pose.orientation.y, POSE.pose.orientation.z, POSE.pose.orientation.w]).T
         pose = pose2np(POSE.pose)
-        pose = np.dot(rot[0:3, 0:3], pose)
+        pose = -np.dot(rot[0:3, 0:3], pose)
         quat = quaternion_from_matrix(rot)
         drone2local_tf.transform.translation.x = pose[0]
         drone2local_tf.transform.translation.y = pose[1]
@@ -43,6 +43,6 @@ if __name__ == "__main__":
         drone2local_tf.transform.rotation.y = quat[1]
         drone2local_tf.transform.rotation.z = quat[2]
         drone2local_tf.transform.rotation.w = quat[3]
-
+        print(pose[2])
         br.sendTransform(drone2local_tf)
         rate.sleep()

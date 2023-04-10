@@ -26,7 +26,7 @@ class WaypointFollower:
         self.radius = radius
         self.hold_time = hold_time
         self.state = LAND
-
+        self.launch_height = launch_height
         # initialize setpoints
         self.origin_setpoint = create_posestamped(
             [0, 0, 0],
@@ -65,26 +65,27 @@ class WaypointFollower:
 
     def get_setpoint(self):
         # print("State: " + self.state)
-        if self.state == "Launch":
+        if self.state == LAUNCH:
             # set setpoint to point above origin
             setpoint_world = self.origin_setpoint
             setpoint_world.pose.position.z = self.launch_height
-        elif self.state == "Test":
+        elif self.state == TEST:
             if not self.waypoints_received:
                 rospy.loginfo("Waiting for waypoints")
                 setpoint_world = self.last_setpoint_world
             else:
                 setpoint_world = self.handle_test()
-        elif self.state == "Land":
+        elif self.state == LAND:
             # set setpoint to origin
             setpoint_world = self.origin_setpoint
-        elif self.state == "Abort":
+        elif self.state == ABORT:
             setpoint_world = self.get_current_pose_world()
             if setpoint_world is None:
                 setpoint_world = self.last_setpoint_world
             # bring drone down
             setpoint_world.pose.position.z = 0
         else:
+            rospy.loginfo(self.state)
             rospy.loginfo("Invalid state. Landing drone.")
             self.state = "Land"
             setpoint_world = self.origin_setpoint
