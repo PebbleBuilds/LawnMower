@@ -1,6 +1,6 @@
 <launch>
     <arg name="group_name" default="rob498_drone_02" />
-    <arg name="gcs_url" default="udp://@10.42.0.130:14550" />
+    <arg name="gcs_url" default="udp://@10.42.0.131:14550" />
     
     <!-- Launch MAVROS -->
     <include file="$(find LawnMower)/launch/mavros.launch">

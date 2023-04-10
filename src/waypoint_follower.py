@@ -17,6 +17,8 @@ class WaypointFollower:
         hold_time=2,
         launch_height=1,
         waypoints=None,
+        dance=False,
+        dance_size=0.35,
     ):
         self.waypoints_received = False
         if waypoints is not None:
