@@ -27,5 +27,6 @@ if __name__ == "__main__":
                 rospy.loginfo("Waiting for vicon transform")
             else:
                 # latch on to last known transform
+                last_trans.header.stamp = rospy.Time.now()
                 br.sendTransform(last_trans)
         rate.sleep()
