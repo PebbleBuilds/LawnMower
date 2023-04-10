@@ -24,7 +24,7 @@ if __name__ == "__main__":
             tf2_ros.ExtrapolationException,
         ):
             if last_trans is None:
-                rospy.loginfo("Waiting for transform")
+                rospy.loginfo("Waiting for vicon transform")
             else:
                 # latch on to last known transform
                 br.sendTransform(last_trans)
