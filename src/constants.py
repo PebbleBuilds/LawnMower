@@ -24,6 +24,7 @@ MAVROS_POSE_TOPIC = "/mavros/local_position/pose"
 VICON_POSE_TOPIC = "/vicon/ROB498_Drone/ROB498_Drone"
 WAYPOINTS_TOPIC = "/{}/comm/waypoints".format(NAME)
 MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
+DISPARITY_MAP_TOPIC = "/camera/stereo/image_raw"
 
 # stereo camera constants
 H, W = 800, 848
