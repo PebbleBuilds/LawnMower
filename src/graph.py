@@ -13,7 +13,7 @@ def distance_point_line(obs, pt1, pt2):
 
 class Node:
     def __init__(self, waypoint, edges=[]):
-        self.waypoint = waypoint
+        self.xy = waypoint[:2]
         self.edges = []
 
 class Edge:
@@ -51,7 +51,7 @@ class DirectedGraph:
         return (x_sum/len(cities), y_sum/len(cities))
     
     def is_reverse(self, edge, node):
-        for other_edge in self.graph[node]:
+        for other_edge in self.graph[node].edges:
             if np.dot(edge.vector, other_edge.vector) < 0:
                 return True
         return False
@@ -92,7 +92,7 @@ class DirectedGraph:
         
         sorted_points.append(sorted_points[0])
         for pt in sorted_points:
-            self.add_node(pt+[])
+            self.add_node(pt)
         for i in range(1,len(sorted_points)):
             self.add_edge(sorted_points[i-1], sorted_points[i])
         
@@ -105,14 +105,14 @@ class DirectedGraph:
                 if not np.any(dists<radius*fos) and not self.is_reverse(Edge(edge.start, points[idx]), points[idx]):
                     # breakpoint()
                     self.add_edge(edge.start, points[idx])
-                    self.waypoint_edges.append(self.graph[edge.start][-1])
+                    self.waypoint_edges.append(self.graph[edge.start].edges[-1])
 
             _, neighbors = kdtree.query(edge.end, k=num_points//2)
             for idx in neighbors:
                 dists = np.array([distance_point_line(obs, points[idx], edge.end) for obs in self.obstacles[:-1]])
                 if not np.any(dists<radius*fos) and not self.is_reverse(Edge(points[idx], edge.end), points[idx]):
                     self.add_edge(points[idx],edge.end)
-                    self.waypoint_edges.append(self.graph[points[idx]][-1])
+                    self.waypoint_edges.append(self.graph[points[idx]].edges[-1])
 
             self.delete_edge(edge)
             self.waypoint_edges.remove(edge)
@@ -129,7 +129,7 @@ class DirectedGraph:
             self.add_node(pt)
         for i in range(1,len(waypoints)):
             self.add_edge(waypoints[i-1], waypoints[i])
-            self.waypoint_edges += self.graph[waypoints[i-1]]
+            self.waypoint_edges += self.graph[waypoints[i-1]].edges
         return
 
     def dijkstra(self, start, end):
@@ -158,7 +158,7 @@ class DirectedGraph:
             visited[current_node] = True
             
             # Update the distances to the neighboring nodes
-            for edge in self.graph[current_node]:
+            for edge in self.graph[current_node].edges:
                 neighbor, weight = edge.end, edge.cost
                 new_distance = distances[current_node] + weight
                 if new_distance < distances[neighbor]:
@@ -178,7 +178,7 @@ class DirectedGraph:
 
     def render(self):
         nodes = list(self.graph.keys())
-        edges = [edge for node in nodes for edge in self.graph[node]]
+        edges = [edge for node in nodes for edge in self.graph[node].edges]
         positions = {node: node for node in nodes}
 
         fig, ax = plt.subplots()
@@ -205,7 +205,7 @@ class DirectedGraph:
 fos=2
 num_points = 6
 graph = DirectedGraph()
-waypoints=[(1,1), (25,45), (60, 60), (40, 2), (2,40), (1,1)]
+waypoints=[(1,1, 2), (25,45, 4), (60, 60, 5), (40, 2, 6), (2,40, 3), (1,1, 2)]
 graph.add_waypoints(waypoints)
 graph.add_obstacle((10,10), 2, True, num_points=num_points, fos=fos)
 graph.add_obstacle((30,30), 2, False, num_points=num_points, fos=fos)
