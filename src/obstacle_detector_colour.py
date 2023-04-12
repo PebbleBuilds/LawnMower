@@ -1,19 +1,30 @@
+#!/usr/bin/env python3
 import cv2
 import numpy as np
 from img_utils import *
+import nanocamera as nano
 
 class ObstacleDetectorColour:
-    def __init__(self):
-        self.image_path = "bcd_cylinder.jpg"
+    def __init__(self, image_path=None):
+        self.image_path = image_path
+        if self.image_path is None:
+            self.camera = nano.Camera(flip=0, width=1280, height=800, fps=30)
         self.img_dict = {}
-        self.img_dict["colour_bgr"] = cv2.pyrDown(cv2.imread(self.image_path, cv2.IMREAD_COLOR))
-        print(self.img_dict["colour_bgr"].shape)
+        
 
         # Yellow mask
         self.yellow_min = np.array([22,50,50])
         self.yellow_max = np.array([30,255,255])
 
         # Rectangle detector
+
+        self.capture_image()
+
+    def capture_image(self):
+        if self.image_path is not None:
+            self.img_dict["colour_bgr"] = cv2.pyrDown(cv2.imread(self.image_path, cv2.IMREAD_COLOR))
+        else:
+            self.img_dict["colour_bgr"] = self.camera.read()
 
     def detect_obstacles(self):
         self.img_dict["colour_hsv"] = cv2.cvtColor(self.img_dict["colour_bgr"], cv2.COLOR_BGR2HSV)
@@ -37,5 +48,4 @@ class ObstacleDetectorColour:
 if __name__ == "__main__":
     ODC = ObstacleDetectorColour()
     ODC.detect_obstacles()
-    
-    show_img(ODC.img_dict["mask_yellow"])
+    show_img(ODC.img_dict["colour_bgr_rects"])
