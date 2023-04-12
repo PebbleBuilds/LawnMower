@@ -5,7 +5,8 @@ import numpy as np
 from scipy.spatial import KDTree
 
 def distance_point_line(obs, pt1, pt2):
-    pt1, pt2 = np.array(pt1), np.array(pt2)
+    obs = obs[:2]
+    pt1, pt2 = np.array(pt1[:2]), np.array(pt2[:2])
     if min(pt1[0],pt2[0])<=obs[0]<=max(pt1[0],pt2[0]) and min(pt1[1],pt2[1])<=obs[1]<=max(pt1[1],pt2[1]):
         return np.linalg.norm(np.cross(pt2-pt1, pt1-obs))/np.linalg.norm(pt2-pt1)
     else:
@@ -31,9 +32,8 @@ class DirectedGraph:
         self.path = None
 
     def add_node(self, waypoint):
-        node = waypoint[:2]
-        if node not in self.graph:
-            self.graph[node] = Node(node)
+        if waypoint not in self.graph:
+            self.graph[waypoint] = Node(waypoint)
 
     def add_edge(self, start, end):
         if start in self.graph:
@@ -75,13 +75,15 @@ class DirectedGraph:
         Adds an obstacle to the graph and appropriately wires it to other nodes
         based on whether it lies within the trajectory between two waypoints
         """
-        self.obstacles.append(center)
         intersecting_edges = self.find_intersecting_edges(center, radius*fos)
+        average_z = np.mean([edge.start[-1]+edge.end[-1] for edge in intersecting_edges])/2
+        center = center + (average_z,)
+        self.obstacles.append(center)
 
         center = np.array(center)
         np_arr_points = np.array([
             center + radius*fos
-            * np.array((round(np.cos(2 * np.pi * i / num_points),2), round(np.sin(2 * np.pi * i / num_points), 2)))
+            * np.array((round(np.cos(2 * np.pi * i / num_points),2), round(np.sin(2 * np.pi * i / num_points), 2), average_z))
             for i in range(num_points)
         ])
         points=tuple(map(tuple, np_arr_points))
@@ -93,9 +95,10 @@ class DirectedGraph:
         sorted_points.append(sorted_points[0])
         for pt in sorted_points:
             self.add_node(pt)
+
         for i in range(1,len(sorted_points)):
             self.add_edge(sorted_points[i-1], sorted_points[i])
-        
+
         kdtree = KDTree(np_arr_points)
         for edge in intersecting_edges:
             print(edge.start, edge.end)
@@ -184,8 +187,8 @@ class DirectedGraph:
         fig, ax = plt.subplots()
         for edge in edges:
             ax.annotate("",
-                        xy=edge.end,
-                        xytext=edge.start,
+                        xy=edge.end[:2],
+                        xytext=edge.start[:2],
                         arrowprops=dict(arrowstyle="-|>", connectionstyle="arc3"))
 
 
@@ -212,5 +215,5 @@ graph.add_obstacle((30,30), 2, False, num_points=num_points, fos=fos)
 graph.add_obstacle((45,50), 2, False, num_points=num_points, fos=fos)
 graph.add_obstacle((10,30), 2, False, num_points=num_points, fos=fos)
 
-print(graph.dijkstra((1,1),(2,40)))
+print(graph.dijkstra(waypoints[0],waypoints[-2]))
 graph.render()
