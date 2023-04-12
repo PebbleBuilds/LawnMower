@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import tf2_ros
+from geometry_msgs.msg import TransformStamped
 
 from constants import *
 
@@ -11,7 +12,11 @@ if __name__ == "__main__":
     listener = tf2_ros.TransformListener(tf_buffer)
     br = tf2_ros.TransformBroadcaster()
     rate = rospy.Rate(100.0)
-    last_trans = None
+    # initialize to identity
+    last_trans = TransformStamped()
+    last_trans.header.frame_id = LOCAL_ORIGIN_FRAME_ID
+    last_trans.child_frame_id = VICON_DUMMY_FRAME_ID
+
     while not rospy.is_shutdown():
         try:
             trans = tf_buffer.lookup_transform(
