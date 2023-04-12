@@ -24,6 +24,7 @@ MAVROS_POSE_TOPIC = "/mavros/local_position/pose"
 VICON_POSE_TOPIC = "/vicon/ROB498_Drone/ROB498_Drone"
 WAYPOINTS_TOPIC = "/{}/comm/waypoints".format(NAME)
 MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
+PC_TOPIC = "/camera/points2"
 
 # stereo camera constants
 H, W = 800, 848
@@ -42,3 +43,6 @@ INITIAL_OBSTACLE_POSITIONS = np.array([
     [0.0, 0.0],
     [0.0, 0.0]
 ])
+
+# PC clustering parameters
+LEAF_SIZE = 0.1
