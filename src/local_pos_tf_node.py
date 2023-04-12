@@ -23,7 +23,7 @@ if __name__ == "__main__":
     rate = rospy.Rate(100.0)
 
     drone2local_tf = TransformStamped()
-    drone2local_tf.header.frame_id =  DRONE_FRAME_ID
+    drone2local_tf.header.frame_id =  BASE_LINK_FRAME_ID
     drone2local_tf.child_frame_id = LOCAL_ORIGIN_FRAME_ID
     while not rospy.is_shutdown():
         if POSE is None:

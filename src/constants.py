@@ -11,6 +11,7 @@ ABORT = 3
 # frame_ids
 VICON_ORIGIN_FRAME_ID = "vicon/world"
 DRONE_FRAME_ID = "vicon/ROB498_Drone/ROB498_Drone"
+BASE_LINK_FRAME_ID = "base_link"
 LOCAL_ORIGIN_FRAME_ID = "map"
 
 # Service topics
