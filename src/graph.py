@@ -11,6 +11,11 @@ def distance_point_line(obs, pt1, pt2):
     else:
         return np.inf
 
+class Node:
+    def __init__(self, waypoint, edges=[]):
+        self.waypoint = waypoint
+        self.edges = []
+
 class Edge:
     def __init__(self, start, end):
         self.start = start
@@ -25,16 +30,17 @@ class DirectedGraph:
         self.waypoint_edges = []
         self.path = None
 
-    def add_node(self, node):
+    def add_node(self, waypoint):
+        node = waypoint[:2]
         if node not in self.graph:
-            self.graph[node] = []
+            self.graph[node] = Node(node)
 
     def add_edge(self, start, end):
         if start in self.graph:
-            self.graph[start].append(Edge(start, end))
+            self.graph[start].edges.append(Edge(start, end))
     
     def delete_edge(self, edge):
-        self.graph[edge.start].remove(edge)
+        self.graph[edge.start].edges.remove(edge)
 
     def calculate_centroid(self, cities):
         """
@@ -70,6 +76,8 @@ class DirectedGraph:
         based on whether it lies within the trajectory between two waypoints
         """
         self.obstacles.append(center)
+        intersecting_edges = self.find_intersecting_edges(center, radius*fos)
+
         center = np.array(center)
         np_arr_points = np.array([
             center + radius*fos
@@ -84,11 +92,10 @@ class DirectedGraph:
         
         sorted_points.append(sorted_points[0])
         for pt in sorted_points:
-            self.add_node(pt)
+            self.add_node(pt+[])
         for i in range(1,len(sorted_points)):
             self.add_edge(sorted_points[i-1], sorted_points[i])
         
-        intersecting_edges = self.find_intersecting_edges(center, radius*fos)
         kdtree = KDTree(np_arr_points)
         for edge in intersecting_edges:
             print(edge.start, edge.end)
