@@ -44,7 +44,7 @@ def detections_cb(msg):
     # convert kalman filter output to pose array
     tracked_poses = PoseArray()
     tracked_poses.header.stamp = rospy.Time.now()
-    tracked_poses.header.frame_id = VICON_ORIGIN_FRAME_ID
+    tracked_poses.header.frame_id = VICON_DUMMY_FRAME_ID
     for i in range(NUM_OBSTACLES):
         pose = Pose()
         pose.position.x = FILTER.x[2 * i]

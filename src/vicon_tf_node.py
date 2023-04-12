@@ -10,15 +10,15 @@ if __name__ == "__main__":
     tf_buffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tf_buffer)
     br = tf2_ros.TransformBroadcaster()
-    rate = rospy.Rate(10.0)
+    rate = rospy.Rate(100.0)
     last_trans = None
     while not rospy.is_shutdown():
         try:
             trans = tf_buffer.lookup_transform(
                 LOCAL_ORIGIN_FRAME_ID, 
                 VICON_ORIGIN_FRAME_ID, 
-                rospy.Time(),
-                rospy.Duration(0, 1e8)
+                rospy.Time(0),
+                rospy.Duration(0, 1e7)
             )
             last_trans = trans
         except (
@@ -28,8 +28,9 @@ if __name__ == "__main__":
         ):
             if last_trans is None:
                 rospy.loginfo("Waiting for vicon transform")
-            else:
-                # latch on to last known transform
-                last_trans.header.stamp = rospy.Time.now()
-                br.sendTransform(last_trans)
+        if last_trans is not None:
+            # latch on to last known transform
+            last_trans.header.stamp = rospy.Time.now()
+            last_trans.child_frame_id = VICON_DUMMY_FRAME_ID
+            br.sendTransform(last_trans)
         rate.sleep()

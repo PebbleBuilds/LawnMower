@@ -12,6 +12,8 @@ POSE = None
 
 def update_transform(msg):
     global POSE
+    if POSE is None:
+        print("receiving new local pose")
     POSE = msg
 
 
@@ -27,7 +29,7 @@ if __name__ == "__main__":
     drone2local_tf.child_frame_id = LOCAL_ORIGIN_FRAME_ID
     while not rospy.is_shutdown():
         if POSE is None:
-            rospy.loginfo("Waiting for drone local pose")
+            # rospy.loginfo("Waiting for drone local pose")
             rate.sleep()
             continue
         drone2local_tf.header.stamp = POSE.header.stamp
@@ -43,6 +45,5 @@ if __name__ == "__main__":
         drone2local_tf.transform.rotation.y = quat[1]
         drone2local_tf.transform.rotation.z = quat[2]
         drone2local_tf.transform.rotation.w = quat[3]
-        print(pose[2])
         br.sendTransform(drone2local_tf)
         rate.sleep()
