@@ -1,0 +1,15 @@
+<launch>
+    <arg name="group_name" default="rob498_drone_02" />
+    <arg name="gcs_url" default="udp://@10.42.0.130:14550" />
+    
+    <!-- Launch MAVROS -->
+    <include file="$(find LawnMower)/launch/mavros.launch">
+        <arg name="gcs_url" value="$(arg gcs_url)" />
+    </include>
+
+    <!-- Launch waypoint finder node -->
+    <!-- TODO add toggle for subscribing to vicon vs querying vicon -->
+    <node pkg="LawnMower" type="challenge_3.py" name="challenge_3" output="screen" />
+    <!-- Launch vicon bridge node -->
+    
+</launch>

@@ -1,0 +1,6 @@
+<launch>
+    <arg name="gcs_url" default="udp://@192.168.186.218" />
+    <include file="$(find LawnMower)/launch/challenge3.launch">
+        <arg name="gcs_url" value="$(arg gcs_url)" />
+    </include>
+</launch>

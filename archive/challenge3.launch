@@ -1,0 +1,10 @@
+<launch>
+    <!-- Launch bridge -->
+    <include file="$(find px4_realsense_bridge)/launch/bridge.launch" />
+
+    <arg name="gcs_url" default="udp://@10.42.0.130:14550" />
+    <include file="$(find LawnMower)/launch/challenge3_vicon.launch">
+        <arg name="gcs_url" value="$(arg gcs_url)" />
+    </include>
+
+</launch>

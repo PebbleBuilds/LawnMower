@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+
+# TODO account for offset from vicon markers to pixhawk center
+# dummy testing script for waypoint follower without subscribers
+
 import numpy as np
 import rospy
 from geometry_msgs.msg import PoseArray, Pose, PoseStamped
