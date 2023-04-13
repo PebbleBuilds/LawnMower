@@ -1,0 +1,48 @@
+<launch>
+    <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen" />
+  
+    <!-- Run a VoxelGrid filter to clean NaNs and downsample the data -->
+    <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" output="screen">
+      <remap from="~input" to="/camera/points2" />
+      <rosparam>
+        filter_field_name: z
+        filter_limit_min: 0.0
+        filter_limit_max: 5
+        leaf_size: 0.02
+        /bond_disable_heartbeat_timeout: true
+      </rosparam>
+    </node>
+  
+    <!-- Run a EuclideanClusterExtraction to extract clusters -->
+    <node pkg="nodelet" type="nodelet" name="euclidean_cluster_extraction" args="load pcl/EuclideanClusterExtraction pcl_manager" output="screen">
+      <remap from="~input" to="/voxel_grid/output" />
+      <rosparam>
+        cluster_tolerance: 0.3
+        min_cluster_size: 100
+        max_cluster_size: 25000
+        spatial_locator: 1
+      </rosparam>
+    </node>
+  
+    <!-- <node pkg="nodelet" type="nodelet" name="extract_plane_indices" args="load pcl/ExtractIndices pcl_manager" output="screen">
+      <remap from="~input"   to="/voxel_grid/output" />
+      <remap from="~indices" to="/planar_segmentation/inliers" />
+      <rosparam>
+        negative: true
+      </rosparam>
+    </node> -->
+  
+    <!-- Project the planar inliers -->
+    <!-- <node pkg="nodelet" type="nodelet" name="project_plane_inliers" args="load pcl/ProjectInliers pcl_manager" output="screen">
+     <remap from="~input"   to="/voxel_grid/output" />
+     <remap from="~indices" to="/planar_segmentation/inliers" />
+     <remap from="~model"   to="/planar_segmentation/model" />
+     <rosparam>
+       model_type: 5
+       axis: [0.0,0.0,1.0]
+       copy_all_data: false
+       copy_all_fields: true
+     </rosparam>
+    </node> -->
+
+  </launch>

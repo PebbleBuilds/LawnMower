@@ -74,7 +74,7 @@ def camera_info_cb(msg, camera_info_pub):
     msg.D = [0, 0, 0, 0, 0]
     # downscale K and P
     msg.K = list(msg.K)
-    msg.K[5] = msg.K[5]/DOWNSCALE_H # optical center
+    msg.K[5] = msg.K[5]/DOWNSCALE_H # Focal point center
     msg.P = list(msg.P)
     msg.P[6] = msg.P[6]/DOWNSCALE_H # optical center
     camera_info_pub.publish(msg)
