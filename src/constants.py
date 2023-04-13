@@ -49,5 +49,10 @@ INITIAL_OBSTACLE_POSITIONS = np.array([
     [0.0, 0.0]
 ])
 
+#
+K = 4
+MIN_THRESHOLD = 0.3 # meters
+MAX_THRESHOLD = 2.5 # meters
+
 # PC clustering parameters
 LEAF_SIZE = 0.1
