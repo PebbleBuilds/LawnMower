@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 POINT_CLOUD = None
 PC_HEADER = None
 OBSTACLE_POINTS = None
+TF_BUFFER = None
 
 # ==============================================================================
 # === Helper Functions =========================================================
@@ -95,7 +96,7 @@ def locate_obstacle_in_world(closest_obstacle):
 
 def main():
 
-    global OBSTACLE_POINTS
+    global OBSTACLE_POINTS, TF_BUFFER
 
     # Initialize node
     rospy.init_node("locate_closest_obstacle_node")
@@ -107,15 +108,15 @@ def main():
 
     # Publishers
     OBSTACLE_POINTS = rospy.Publisher(CLOSEST_OBSTACLE_TOPIC, PointStamped, queue_size=1)
-
     rate = rospy.Rate(10)
+    rospy.loginfo("initialized obstacle detection node")
     while not rospy.is_shutdown():
         if POINT_CLOUD is not None:
             # Process disparity map and publish obstacle points in world frame
             world_obstacle_pose_stamp = process_point_cloud()
+            print(world_obstacle_pose_stamp)
             OBSTACLE_POINTS.publish(world_obstacle_pose_stamp)
         rate.sleep()
-
 
 if __name__ == "__main__":
     main()
