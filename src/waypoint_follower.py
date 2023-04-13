@@ -17,6 +17,8 @@ class WaypointFollower:
         hold_time=2,
         launch_height=1,
         waypoints=None,
+        dance=False,
+        dance_size=0.35,
     ):
         self.waypoints_received = False
         if waypoints is not None:
@@ -24,18 +26,18 @@ class WaypointFollower:
         self.radius = radius
         self.hold_time = hold_time
         self.state = LAND
-
+        self.launch_height = launch_height
         # initialize setpoints
         self.origin_setpoint = create_posestamped(
             [0, 0, 0],
             orientation=[0, 0, -0.7071068, 0.7071068],  # checkerboard wall
-            frame_id=VICON_ORIGIN_FRAME_ID,
+            frame_id=VICON_DUMMY_FRAME_ID,
         )
 
         self.launch_setpoint = create_posestamped(
             [0, 0, launch_height],
             orientation=[0, 0, -0.7071068, 0.7071068],  # checkerboard wall
-            frame_id=VICON_ORIGIN_FRAME_ID,
+            frame_id=VICON_DUMMY_FRAME_ID,
         )
 
         # tf buffer and listener
@@ -63,26 +65,27 @@ class WaypointFollower:
 
     def get_setpoint(self):
         # print("State: " + self.state)
-        if self.state == "Launch":
+        if self.state == LAUNCH:
             # set setpoint to point above origin
             setpoint_world = self.origin_setpoint
             setpoint_world.pose.position.z = self.launch_height
-        elif self.state == "Test":
+        elif self.state == TEST:
             if not self.waypoints_received:
                 rospy.loginfo("Waiting for waypoints")
                 setpoint_world = self.last_setpoint_world
             else:
                 setpoint_world = self.handle_test()
-        elif self.state == "Land":
+        elif self.state == LAND:
             # set setpoint to origin
             setpoint_world = self.origin_setpoint
-        elif self.state == "Abort":
+        elif self.state == ABORT:
             setpoint_world = self.get_current_pose_world()
             if setpoint_world is None:
                 setpoint_world = self.last_setpoint_world
             # bring drone down
             setpoint_world.pose.position.z = 0
         else:
+            rospy.loginfo(self.state)
             rospy.loginfo("Invalid state. Landing drone.")
             self.state = "Land"
             setpoint_world = self.origin_setpoint
@@ -93,8 +96,8 @@ class WaypointFollower:
 
     def get_current_pose_world(self):
         try:
-            t = self.listener.lookupTransform(
-                VICON_ORIGIN_FRAME_ID, DRONE_FRAME_ID, rospy.Time(0)
+            t = self.tf_buffer.lookup_transform(
+                VICON_DUMMY_FRAME_ID, DRONE_FRAME_ID, rospy.Time(0)
             )
             return tfstamped2posestamped(t)
         except (
@@ -103,13 +106,13 @@ class WaypointFollower:
             tf2_ros.ExtrapolationException,
         ):
             rospy.loginfo(
-                "Waiting for transform from vicon to local origin. Returning last setpoint."
+                "Waiting for transform from vicon to drone. Returning last setpoint."
             )
             return None
 
     def world2local(self, pose):
         try:
-            pose_local = self.tf_buffer.transform(pose, LOCAL_ORIGIN_FRAME_ID)
+            pose_local = self.tf_buffer.transform(pose, LOCAL_ORIGIN_FRAME_ID, rospy.Duration(1))
             return pose_local
         except (
             tf2_ros.LookupException,

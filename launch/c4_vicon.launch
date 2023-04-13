@@ -1,16 +1,16 @@
 <launch>
     <!-- Launch bridge -->
     <include file="$(find px4_realsense_bridge)/launch/bridge.launch" />
-    <arg name="gcs_url" default="udp://@10.42.0.130:14550" />
+    <arg name="gcs_url" default="udp://@10.42.0.131:14550" />
+    <!-- <arg name="gcs_url" default="udp://@192.168.137:1:14550" /> -->
+
     <!-- Launch MAVROS -->
     <include file="$(find LawnMower)/launch/mavros.launch">
         <arg name="gcs_url" value="$(arg gcs_url)" />
     </include>
-
+    <!-- Include extrinsicts -->
+    <include file="$(find LawnMower)/launch/extrinsics.launch" />
     <!-- Launch challenge -->
     <node pkg="LawnMower" type="challenge4.py" name="challenge4" output="screen" />
 
-    <!-- Launch transform publishers -->
-    <node pkg="LawnMower" type="vicon_tf_node.py" name="vicon_tf_node" output="screen" />
-    <node pkg="LawnMower" type="local_pos_tf_node.py" name="local_pos_tf_node" output="screen" />
 </launch>
