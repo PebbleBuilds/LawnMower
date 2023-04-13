@@ -31,13 +31,13 @@ class WaypointFollower:
         self.origin_setpoint = create_posestamped(
             [0, 0, 0],
             orientation=[0, 0, -0.7071068, 0.7071068],  # checkerboard wall
-            frame_id=VICON_ORIGIN_FRAME_ID,
+            frame_id=VICON_DUMMY_FRAME_ID,
         )
 
         self.launch_setpoint = create_posestamped(
             [0, 0, launch_height],
             orientation=[0, 0, -0.7071068, 0.7071068],  # checkerboard wall
-            frame_id=VICON_ORIGIN_FRAME_ID,
+            frame_id=VICON_DUMMY_FRAME_ID,
         )
 
         # tf buffer and listener
@@ -97,7 +97,7 @@ class WaypointFollower:
     def get_current_pose_world(self):
         try:
             t = self.tf_buffer.lookup_transform(
-                VICON_ORIGIN_FRAME_ID, DRONE_FRAME_ID, rospy.Time(0)
+                VICON_DUMMY_FRAME_ID, DRONE_FRAME_ID, rospy.Time(0)
             )
             return tfstamped2posestamped(t)
         except (

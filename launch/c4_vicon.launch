@@ -8,10 +8,8 @@
     <include file="$(find LawnMower)/launch/mavros.launch">
         <arg name="gcs_url" value="$(arg gcs_url)" />
     </include>
-
-    <!-- Launch transform publishers -->
-    <node pkg="LawnMower" type="local_pos_tf_node.py" name="local_pos_tf_node" output="screen" />
-    <node pkg="LawnMower" type="vicon_tf_node.py" name="vicon_tf_node" output="screen" />
+    <!-- Include extrinsicts -->
+    <include file="$(find LawnMower)/launch/extrinsics.launch" />
     <!-- Launch challenge -->
     <node pkg="LawnMower" type="challenge4.py" name="challenge4" output="screen" />
 

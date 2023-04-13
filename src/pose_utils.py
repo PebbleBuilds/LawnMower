@@ -8,7 +8,7 @@ from constants import *
 
 
 def create_posestamped(
-    pose_xyz=[0, 0, 0], orientation=[0, 0, 0, 1], frame_id=VICON_ORIGIN_FRAME_ID
+    pose_xyz=[0, 0, 0], orientation=[0, 0, 0, 1], frame_id=VICON_DUMMY_FRAME_ID
 ):
     pose_stamped = PoseStamped()
     assert len(pose_xyz) == 3, "Pose must be a 3D vector"
