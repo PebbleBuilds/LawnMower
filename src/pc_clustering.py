@@ -6,7 +6,8 @@ from constants import *
 from sensor_msgs.msg import PointCloud2
 from vision_msgs.msg import Detection3DArray
 import ros_numpy
-CYLINDER_CLUSTERING = True
+
+CYLINDER_CLUSTERING = True # else box clustering
 
 def pcl_cb(msg):
     rospy.loginfo("Got point cloud.")
@@ -14,6 +15,7 @@ def pcl_cb(msg):
         cluster_cylinders(msg)
     else:
         cluster_boxes(msg)
+
 def cluster_cylinders(msg):
     # convert to pcl data
     pc = ros_numpy.numpify(msg)
@@ -26,7 +28,7 @@ def cluster_cylinders(msg):
     tree = pc.make_kdtree()
     ne.set_SearchMethod(tree)
     ne.set_KSearch(50)
-    normals = ne.compute()
+
     seg = pc.make_segmenter_normals(ksearch=50)
     seg.set_optimize_coefficients(True)
     seg.set_model_type(pcl.SACMODEL_CYLINDER)
@@ -37,8 +39,11 @@ def cluster_cylinders(msg):
     seg.set_radius_limits(0, 0.1)
     seg.set_axis([0, 0, 1])
     seg.set_eps_angle(0.523599)
+
     inliers, coefficients = seg.segment()
+    print(coefficients)
     cloud_cylinder = pc.extract(inliers, negative=False)
+
     # convert to ROS message
     ros_cloud_cylinder = ros_numpy.msgify(PointCloud2, cloud_cylinder)
     ros_cloud_cylinder.header = msg.header
@@ -56,7 +61,7 @@ def cluster_boxes(msg):
     tree = downsampled.make_kdtree()
     ec.set_SearchMethod(tree)
     cluster_indices = ec.Extract()
-    
+
 
 def outlier_filtering(pcl_data, mean_k=50, std_dev=1.0):
     outlier_filter = pcl_data.make_statistical_outlier_filter()
