@@ -28,6 +28,10 @@ MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
 # Publisher topics
 PLANNER = "next_waypoint"
 
+# Obstacle constants
+OBS_RADIUS = 0.2
+FOS = 1/0.2
+
 # stereo camera constants
 H, W = 800, 848
 IMG_SIZE_WH = (W, H)

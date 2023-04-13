@@ -68,6 +68,20 @@ def comm_node():
     rospy.loginfo("Services, subscribers, publishers initialized")
 
     while not rospy.is_shutdown():
+        """
+        Planning loic v1
+        while me not at the end:
+            me turn to next waypoint
+            if me see obstacle:`
+                me detect obstacle position
+                me detect obstacle type
+                me add obstacle(center, is_clockwise)
+                me do dijkstra to next waypoint
+                me get path
+                me convert path coordinates to waypoints
+                me do WF.set_waypoints(path_wpts)
+            me go BRRRRRR!
+        """
         
         setpoint = WF.get_setpoint()
         if setpoint is not None:

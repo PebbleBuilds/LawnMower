@@ -205,15 +205,16 @@ class DirectedGraph:
         plt.show()
 
 
-fos=2
-num_points = 6
-graph = DirectedGraph()
-waypoints=[(1,1, 2), (25,45, 4), (60, 60, 5), (40, 2, 6), (2,40, 3), (1,1, 2)]
-graph.add_waypoints(waypoints)
-graph.add_obstacle((10,10), 2, True, num_points=num_points, fos=fos)
-graph.add_obstacle((30,30), 2, False, num_points=num_points, fos=fos)
-graph.add_obstacle((45,50), 2, False, num_points=num_points, fos=fos)
-graph.add_obstacle((10,30), 2, False, num_points=num_points, fos=fos)
+# Example
+# fos=2
+# num_points = 6
+# graph = DirectedGraph()
+# waypoints=[(1,1, 2), (25,45, 4), (60, 60, 5), (40, 2, 6), (2,40, 3), (1,1, 2)]
+# graph.add_waypoints(waypoints)
+# graph.add_obstacle((10,10), 2, True, num_points=num_points, fos=fos)
+# graph.add_obstacle((30,30), 2, False, num_points=num_points, fos=fos)
+# graph.add_obstacle((45,50), 2, False, num_points=num_points, fos=fos)
+# graph.add_obstacle((10,30), 2, False, num_points=num_points, fos=fos)
 
-print(graph.dijkstra(waypoints[0],waypoints[-2]))
-graph.render()
+# print(graph.dijkstra(waypoints[0],waypoints[-2]))
+# graph.render()
