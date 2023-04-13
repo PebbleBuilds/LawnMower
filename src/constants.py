@@ -25,6 +25,9 @@ VICON_POSE_TOPIC = "/vicon/ROB498_Drone/ROB498_Drone"
 WAYPOINTS_TOPIC = "/{}/comm/waypoints".format(NAME)
 MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
 
+# Publisher topics
+PLANNER = "next_waypoint"
+
 # stereo camera constants
 H, W = 800, 848
 IMG_SIZE_WH = (W, H)

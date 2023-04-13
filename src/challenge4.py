@@ -8,9 +8,9 @@ from std_srvs.srv import Empty, EmptyResponse
 from constants import *
 from waypoint_follower import WaypointFollower
 from graph import DirectedGraph
+from pose_utils import posestamped2np
 
 WF = None
-graph = DirectedGraph()
 
 # Service callbacks
 def callback_launch(request):
@@ -38,15 +38,16 @@ def callback_abort(request):
 
 
 def callback_waypoints(msg):
-    WF.set_waypoints(msg.poses)
-    graph.add_waypoints()
+    WF.set_waypoints(msg.poses)  
+    graph.add_waypoints([posestamped2np(pose for pose in msg.poses)])
 
 # Main node
 def comm_node():
-    global WF
+    global WF, graph
     # Do not change the node name and service topics!
     rospy.init_node(NAME)
     # TODO change params to get from launch file
+    graph = DirectedGraph()
     WF = WaypointFollower(
         radius=0.5,
         hold_time=1,
@@ -67,6 +68,7 @@ def comm_node():
     rospy.loginfo("Services, subscribers, publishers initialized")
 
     while not rospy.is_shutdown():
+        
         setpoint = WF.get_setpoint()
         if setpoint is not None:
             sp_pub.publish(setpoint)
