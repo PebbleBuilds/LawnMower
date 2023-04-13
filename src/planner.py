@@ -8,12 +8,14 @@ from waypoint_follower import WaypointFollower
 from graph import DirectedGraph
 from pose_utils import posestamped2np
 
-class WaypointPublisher(DirectedGraph):
+class WaypointPlanner(DirectedGraph):
     def __init__(
         self,
         radius=0.05,
+        launch_height = 1,
         waypoints=None,
     ):
+        DirectedGraph.__init__(self) 
         self.waypoints_received = False
         if waypoints is not None:
             self.set_waypoints(waypoints)
@@ -28,18 +30,18 @@ class WaypointPublisher(DirectedGraph):
         self.dance_waypoint_idx = 0
         self.waypoint_arrival_time = None
 
+        # next obstacle params
+        self.next_obstacle_pos = None
+        self.next_obstacle_type = None
 
-    def set_waypoints(self, waypoints):
-        if self.waypoints_received:
-            return
-        print("Setting waypoints: \n", waypoints)
-        # convert from vicon_world frame to vicon_inertial frame
-        self.waypoints_world = waypoints
-        self.waypoints_received = True
-
-    def set_state(self, state):
-        assert state in [LAUNCH, TEST, LAND, ABORT], "Invalid state " + state
-        self.state = state
+        # waypoint queue and params
+        self.launch_wpt = create_posestamped(
+            [0, 0, launch_height],
+            orientation=[0, 0, -0.7071068, 0.7071068],  # checkerboard wall
+            frame_id=VICON_ORIGIN_FRAME_ID,
+        )
+        self.current_waypoint = None
+        self.next_waypoint = None
 
     def get_current_pose_world(self):
         try:
@@ -90,42 +92,52 @@ class WaypointPublisher(DirectedGraph):
 
 
 def callback_waypoints(msg):
-    graph.add_waypoints([posestamped2np(pose for pose in msg.poses)])
+    WP.add_waypoints([posestamped2np(pose for pose in msg.poses)])
+
+def callback_obstacle_pos(msg)
+    # WP.add_obstacle(posestamped2np(pose), )
+    self.next_obstacle_pos = msg
+
+def callback_obstacle_type(msg);
+    self.next_obstacle_type = msg
 
 
 def planning_node():
-    global graph
+    global WP
     # Do not change the node name and service topics!
     rospy.init_node("planner")
     # TODO change params to get from launch file
-    graph = DirectedGraph()
+    WP = WaypointPlanner()
    
     # subscribers
     rospy.Subscriber(WAYPOINTS_TOPIC, PoseArray, callback_waypoints)
+    # rospy.Subscriber(OBSTACLE_POS_TOPIC, PoseStamped, callback_obstacle_pos)
+    # rospy.Subscriber(OBSTACLE_TYPE_TOPIC, PoseStamped, callback_obstacle_type)
 
 
     # publishers
     sp_pub = rospy.Publisher(PLANNER, PoseStamped, queue_size=1)
 
-    while not rospy.is_shutdown():
-        """
-        Planning loic v1
-        while me not at the end:
-            me turn to next waypoint
-            if me see obstacle:`
-                me detect obstacle position
-                me detect obstacle type
-                me add obstacle(center, is_clockwise)
-                me do dijkstra to next waypoint
-                me get path
-                me convert path coordinates to waypoints
-                me do WF.set_waypoints(path_wpts)
-            me go BRRRRRR!
-        """
+    while not rospy.is_shutdown():        
+        if WP.next_obstacle_pos not in WP.obstacles:
+            rospy.loginfo("Adding obstacle at %s of type %r with radius %d and effective radius %d" % (str(WP.next_obstacle_pos), WP.next_obstacle_type, RADIUS, FOS*RADIUS)
+)
+            WP.add_obstacle(WP.next_obstacle_pos, OBS_RADIUS, WP.next_obstacle_type,FOS)
+            WP.modify_path(WP.waypoints[0], WP.waypoints[-1])
         
-        setpoint = WF.get_setpoint()
-        if setpoint is not None:
-            sp_pub.publish(setpoint)
+        if WP.current_waypoint is None: # If going to launch waypoint
+            WP.next_waypoint = WP.launch_waypoint
+        
+        dist = np.linalg.norm(
+            posestamped2np(WP.get_current_pose_world())
+            - posestamped2np(WP.next_waypoint)
+        ) 
+        
+        if dist < WP.radius:
+            WP.current_waypoint = WP.next_waypoint
+            WP.next_waypoint = WP.get_next_wpt(WP.current_waypoint)
+        
+        sp_pub.publish(WP.next_waypoint)
         rospy.sleep(0.2)
 
 

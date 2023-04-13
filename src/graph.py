@@ -13,9 +13,10 @@ def distance_point_line(obs, pt1, pt2):
         return np.inf
 
 class Node:
-    def __init__(self, waypoint, edges=[]):
+    def __init__(self, waypoint, edges=[], next_wpt=None):
         self.xy = waypoint[:2]
         self.edges = []
+        self.next_wpt = next_wpt
 
 class Edge:
     def __init__(self, start, end):
@@ -29,11 +30,12 @@ class DirectedGraph:
         self.graph = {}
         self.obstacles = []
         self.waypoint_edges = []
+        self.main_waypoints = []
         self.path = None
 
-    def add_node(self, waypoint):
+    def add_node(self, waypoint, next_wpt=None):
         if waypoint not in self.graph:
-            self.graph[waypoint] = Node(waypoint)
+            self.graph[waypoint] = Node(waypoint, next_wpt=next_wpt)
 
     def add_edge(self, start, end):
         if start in self.graph:
@@ -41,6 +43,9 @@ class DirectedGraph:
     
     def delete_edge(self, edge):
         self.graph[edge.start].edges.remove(edge)
+
+    def get_next_wpt(self, current_wpt):
+        return self.graph[current_wpt].next_wpt
 
     def calculate_centroid(self, cities):
         """
@@ -101,7 +106,6 @@ class DirectedGraph:
 
         kdtree = KDTree(np_arr_points)
         for edge in intersecting_edges:
-            print(edge.start, edge.end)
             _, neighbors = kdtree.query(edge.start, k=num_points//2)
             for idx in neighbors:
                 dists = np.array([distance_point_line(obs, edge.start, points[idx]) for obs in self.obstacles[:-1]])
@@ -128,8 +132,10 @@ class DirectedGraph:
         Adds major waypoints to the graph. To be called at the beginning of the task before
         adding pbstacles.
         """
-        for pt in waypoints:
-            self.add_node(pt)
+        self.waypoints = waypoints
+        for i in range(len(waypoints)-1):
+            self.add_node(waypoints[i], next_wpt= waypoints[i+1])
+        self.add_node(waypoints[-1])
         for i in range(1,len(waypoints)):
             self.add_edge(waypoints[i-1], waypoints[i])
             self.waypoint_edges += self.graph[waypoints[i-1]].edges
@@ -179,6 +185,21 @@ class DirectedGraph:
         return path
 
 
+    def modify_path(self, start, end):
+        """
+        Calls dijkstra and updates the path to next waypoint
+        """
+        path = self.dijkstra(start, end)
+        for i in range(len(path)-1):
+            self.graph[path[i]].next_wpt = path[i+1]
+        return path
+
+    def print_full_path(self, start):
+        curr_pt = start
+        while curr_pt is not None:
+            print(curr_pt)
+            curr_pt = self.get_next_wpt(curr_pt)
+
     def render(self):
         nodes = list(self.graph.keys())
         edges = [edge for node in nodes for edge in self.graph[node].edges]
@@ -206,15 +227,20 @@ class DirectedGraph:
 
 
 # Example
-# fos=2
-# num_points = 6
-# graph = DirectedGraph()
-# waypoints=[(1,1, 2), (25,45, 4), (60, 60, 5), (40, 2, 6), (2,40, 3), (1,1, 2)]
-# graph.add_waypoints(waypoints)
+fos=2
+num_points = 6
+graph = DirectedGraph()
+waypoints=[(1,1, 2), (25,45, 4), (60, 60, 5), (40, 2, 6), (2,40, 3)]
+graph.add_waypoints(waypoints)
 # graph.add_obstacle((10,10), 2, True, num_points=num_points, fos=fos)
 # graph.add_obstacle((30,30), 2, False, num_points=num_points, fos=fos)
 # graph.add_obstacle((45,50), 2, False, num_points=num_points, fos=fos)
 # graph.add_obstacle((10,30), 2, False, num_points=num_points, fos=fos)
 
-# print(graph.dijkstra(waypoints[0],waypoints[-2]))
+# print(graph.modify_path(waypoints[0],waypoints[-2]))
+# breakpoint()
 # graph.render()
+
+while True:
+    graph.print_full_path(waypoints[0])
+    breakpoint()
