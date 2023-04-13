@@ -13,10 +13,7 @@ if __name__ == "__main__":
     br = tf2_ros.TransformBroadcaster()
     rate = rospy.Rate(100.0)
     # initialize to identity
-    last_trans = TransformStamped()
-    last_trans.header.frame_id = LOCAL_ORIGIN_FRAME_ID
-    last_trans.child_frame_id = VICON_DUMMY_FRAME_ID
-
+    last_trans = None
     while not rospy.is_shutdown():
         try:
             trans = tf_buffer.lookup_transform(
@@ -31,8 +28,7 @@ if __name__ == "__main__":
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
-            if last_trans is None:
-                rospy.loginfo("Waiting for vicon transform")
+            rospy.logwarn("Failed to get transform from vicon")
         if last_trans is not None:
             # latch on to last known transform
             last_trans.header.stamp = rospy.Time.now()
