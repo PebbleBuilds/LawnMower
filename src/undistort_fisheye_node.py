@@ -78,9 +78,10 @@ def img_cb(img_msg1, img_msg2, camera_info_msg1, camera_info_msg2):
     ]
     
     # convert from mono8 to bgr8
-    img_undistorted = cv2.cvtColor(img_undistorted, cv2.COLOR_GRAY2BGR)
+    img_undistorted1 = cv2.cvtColor(img_undistorted1, cv2.COLOR_GRAY2BGR)
     output_msg1 = BRIDGE.cv2_to_imgmsg(img_undistorted1, encoding="bgr8")
     output_msg1.header = img_msg1.header
+    img_undistorted2 = cv2.cvtColor(img_undistorted2, cv2.COLOR_GRAY2BGR)
     output_msg2 = BRIDGE.cv2_to_imgmsg(img_undistorted2, encoding="bgr8")
     output_msg2.header = img_msg2.header
 
@@ -138,7 +139,6 @@ def main():
             Subscriber("/camera/fisheye2/camera_info", CameraInfo), # unused
         ],
         10,
-        0.05,
     )
     sync.registerCallback(img_cb)
 
