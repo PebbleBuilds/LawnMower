@@ -119,8 +119,7 @@ def planning_node():
             frame_id=VICON_ORIGIN_FRAME_ID,
         )
 
-        if WP.next_waypoint != WP.main_waypoints[-1]:
-            wp_pub.publish(WP.next_waypoint)
+        wp_pub.publish(WP.next_waypoint)
         rospy.sleep(0.2)
 
 
