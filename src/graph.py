@@ -92,7 +92,7 @@ class DirectedGraph:
         
         graph.add_waypoints(self.main_waypoints)
         for i in range(len(centers)):
-            graph.add_obstacle(centers[i], OBS_RADIUS, types[i], num_points=NUM_OBSTACLE_POINTS, fos=FOS)
+            graph.add_obstacle(centers[i], OBSTACLE_RADIUS, types[i], num_points=NUM_OBSTACLE_POINTS, fos=FOS)
         return
 
     def add_obstacle(self, center, radius, clockwise, num_points=8, fos=1.5):

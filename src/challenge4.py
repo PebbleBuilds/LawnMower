@@ -42,7 +42,7 @@ def callback_planner(msg):
 
 # Main node
 def comm_node():
-    global WF, graph
+    global WF
     # Do not change the node name and service topics!
     rospy.init_node(NAME)
     # TODO change params to get from launch file
