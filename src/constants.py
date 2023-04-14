@@ -28,7 +28,7 @@ VICON_POSE_TOPIC = "/vicon/ROB498_Drone/ROB498_Drone"
 WAYPOINTS_TOPIC = "/{}/comm/waypoints".format(NAME)
 MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
 PC_TOPIC = "/camera/points2"
-POINT_CLOUD_TOPIC = "/camera/pointcloud2"
+POINT_CLOUD_TOPIC = "/camera/points2"
 CLOSEST_OBSTACLE_TOPIC = "/locate_closest_obstacle_node"
 
 # stereo camera constants

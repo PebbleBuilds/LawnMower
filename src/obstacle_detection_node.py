@@ -36,7 +36,7 @@ def update_point_cloud(msg):
     Converts the PointCloud2 message into a numpy array of points
     """
     global POINT_CLOUD, PC_HEADER
-
+    print("updating point cloud")
     # Convert PointCloud2 message to numpy array
     pc = ros_numpy.numpify(msg)
     POINT_CLOUD = np.hstack([pc['x'], pc['z']]) # (x, z)
@@ -76,18 +76,18 @@ def locate_obstacle_in_world(closest_obstacle):
     Drone frame is unnecessary here. 
     """
     # End frame is world frame
-    obstacle_pose = PoseStamped()
-    obstacle_pose.header = PC_HEADER
+    obstacle_point = PointStamped()
+    obstacle_point.header = PC_HEADER
     # Update obstacle_pose with closest_obstacle coordinates
-    obstacle_pose.point.x = closest_obstacle[0]
-    obstacle_pose.point.y = 0
-    obstacle_pose.point.z = closest_obstacle[1]
+    obstacle_point.point.x = closest_obstacle[0]
+    obstacle_point.point.y = 0
+    obstacle_point.point.z = closest_obstacle[1]
 
     # Transform the obstacle_pose coordinates from the point cloud frame to the world frame
     tf_cloud_to_world = TF_BUFFER.lookup_transform(VICON_DUMMY_FRAME_ID, PC_HEADER.frame_id, PC_HEADER.stamp, rospy.Duration(1.0))
-    obstacle_pose.pose = tf2_geometry_msgs.do_transform_point(obstacle_pose.point, tf_cloud_to_world)
+    obstacle_point.pose = tf2_geometry_msgs.do_transform_point(obstacle_point.point, tf_cloud_to_world)
 
-    return obstacle_pose
+    return obstacle_point
 
 
 #===============================================================================
