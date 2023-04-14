@@ -108,7 +108,6 @@ def init_maps():
     R1, R2, P1, P2, Q, roi1, roi2 = cv2.stereoRectify(
         K1, D1, K2, D2, IMG_SIZE_WH, R=np.eye(3), T=T
     )
-    print(K1, D1)
     MAPX1, MAPY1 = cv2.fisheye.initUndistortRectifyMap(
         K1, D1, R1, P1, size=IMG_SIZE_WH, m1type=cv2.CV_32FC1
     )
@@ -137,7 +136,7 @@ def main():
     while not rospy.is_shutdown():
         if CAM_INFO1_ORIGINAL is not None and CAM_INFO2_ORIGINAL is not None and MAPX1 is None:
             init_maps()
-            print("initialiuzed maps")
+            print("initialized maps")
         rate.sleep()
 
 
