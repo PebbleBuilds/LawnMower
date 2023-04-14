@@ -35,10 +35,10 @@ def callback_abort(request):
     WF.set_state(ABORT)
     return EmptyResponse()
 
-
-def callback_waypoints(msg):
-    WF.set_waypoints(msg.poses)  
-    graph.add_waypoints([posestamped2np(pose for pose in msg.poses)])
+def callback_planner(msg):
+    wf_waypoints = PoseArray()
+    wf_waypoints.poses = [msg.pose]
+    WF.set_waypoints(wf_waypoints)
 
 # Main node
 def comm_node():
@@ -65,7 +65,7 @@ def comm_node():
     sp_pub = rospy.Publisher(MAVROS_SETPOINT_TOPIC, PoseStamped, queue_size=1)
     rospy.loginfo("Services, subscribers, publishers initialized")
 
-    while not rospy.is_shutdown():        
+    while not rospy.is_shutdown():
         setpoint = WF.get_setpoint()
         if setpoint is not None:
             sp_pub.publish(setpoint)
