@@ -12,6 +12,7 @@ from waypoint_follower import WaypointFollower
 from graph import DirectedGraph
 from pose_utils import posestamped2np, euler_to_quaternion, get_yaw
 
+WP = WaypointPlanner()
 class WaypointPlanner(DirectedGraph):
     def __init__(
         self,
@@ -67,10 +68,10 @@ class WaypointPlanner(DirectedGraph):
 def callback_waypoints(msg):
     WP.add_waypoints([posestamped2np(pose for pose in msg.poses)])
 
-def callback_obstacle_pos(msg)
+def callback_obstacle_pos(msg):
     WP.obstacles_poses = [pose2np(pose) for pose in msg]
 
-def callback_obstacle_type(msg);
+def callback_obstacle_type(msg):
     WP.next_obstacle_type = msg
 
 
@@ -106,7 +107,7 @@ def planning_node():
             WP.next_waypoint = WP.get_next_wpt(WP.current_waypoint)
         
         if WP.next_waypoint in WP.main_waypoints:
-            next_orientation = euler_to_quaternion(get_yaw(WP.current_waypoint[:2]
+            next_orientation = euler_to_quaternion(get_yaw(WP.current_waypoint[:2],
                                                     WP.next_waypoint[:2]))
 
         self.next_setpoint = create_posestamped(
