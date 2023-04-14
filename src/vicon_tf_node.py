@@ -20,7 +20,6 @@ if __name__ == "__main__":
                 LOCAL_ORIGIN_FRAME_ID, 
                 VICON_ORIGIN_FRAME_ID, 
                 rospy.Time(0),
-                rospy.Duration(0, 1e7)
             )
             last_trans = trans
         except (
@@ -31,7 +30,7 @@ if __name__ == "__main__":
             rospy.logwarn("Failed to get transform from vicon")
         if last_trans is not None:
             # latch on to last known transform
-            last_trans.header.stamp = rospy.Time.now()
+            last_trans.header.stamp = rospy.Time(0)
             last_trans.child_frame_id = VICON_DUMMY_FRAME_ID
             br.sendTransform(last_trans)
         rate.sleep()

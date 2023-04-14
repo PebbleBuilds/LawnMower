@@ -16,6 +16,7 @@ from sensor_msgs.point_cloud2 import read_points
 
 from constants import *
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 
 # ==============================================================================
 # === Global Variables =========================================================
@@ -36,12 +37,13 @@ def update_point_cloud(msg):
     Converts the PointCloud2 message into a numpy array of points
     """
     global POINT_CLOUD, PC_HEADER
-    print("updating point cloud")
-    # Convert PointCloud2 message to numpy array
-    pc = ros_numpy.numpify(msg)
-    POINT_CLOUD = np.hstack([pc['x'], pc['z']]) # (x, z)
+    # Convert PointCloud2 message to numpy array using read_points
+    POINT_CLOUD = np.array(list(read_points(msg, skip_nans=True, field_names=("x", "y", "z"))))
+    if POINT_CLOUD.shape[0] == 0 or len(POINT_CLOUD.shape)!=2 or POINT_CLOUD.shape[1]!=3:
+        return
     PC_HEADER = msg.header
-    plt.scatter(POINT_CLOUD[:,0], POINT_CLOUD[:,1])
+    # plt.scatter(POINT_CLOUD[:,0], POINT_CLOUD[:,2])\
+    plt.Circle((0,0), 5)
 
 
 def process_point_cloud():
@@ -53,7 +55,7 @@ def process_point_cloud():
     point_cloud = POINT_CLOUD.copy()
 
     # Step 2: Filter out points with depth value less than and greater than thresholds
-    mask = np.logical_and(point_cloud[:,1] > MIN_THRESHOLD, point_cloud[:,1] < MAX_THRESHOLD)
+    mask = np.logical_and(point_cloud[:,2] > MIN_DIST, point_cloud[:,2] < MAX_DIST)
     point_cloud = point_cloud[mask]
 
     # Step 3: Find the k closest obstacles to the drone using euclidean distance from the principal point
@@ -62,9 +64,8 @@ def process_point_cloud():
     closest_k_obstacles_inds = np.argsort(distances)[:K]
     # compute the median distance of the closest k obstacles
     median_x = np.median(point_cloud[closest_k_obstacles_inds, 0])
-    median_z = np.median(point_cloud[closest_k_obstacles_inds, 1])
+    median_z = np.median(point_cloud[closest_k_obstacles_inds, 2])
     median_point = np.array([median_x, median_z])
-
     # Step 5: Locate obstacle in world frame
     located_obstacle_pose = locate_obstacle_in_world(median_point)
     
@@ -84,8 +85,12 @@ def locate_obstacle_in_world(closest_obstacle):
     obstacle_point.point.z = closest_obstacle[1]
 
     # Transform the obstacle_pose coordinates from the point cloud frame to the world frame
-    tf_cloud_to_world = TF_BUFFER.lookup_transform(VICON_DUMMY_FRAME_ID, PC_HEADER.frame_id, PC_HEADER.stamp, rospy.Duration(1.0))
-    obstacle_point.pose = tf2_geometry_msgs.do_transform_point(obstacle_point.point, tf_cloud_to_world)
+    try:
+        tf_cloud_to_world = TF_BUFFER.lookup_transform(VICON_DUMMY_FRAME_ID, PC_HEADER.frame_id, rospy.Time(0), rospy.Duration(2.0))
+    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+        rospy.logwarn("Failed to get transform from vicon")
+        return None
+    obstacle_point = tf2_geometry_msgs.do_transform_point(obstacle_point, tf_cloud_to_world)
 
     return obstacle_point
 
@@ -114,7 +119,8 @@ def main():
         if POINT_CLOUD is not None:
             # Process disparity map and publish obstacle points in world frame
             world_obstacle_pose_stamp = process_point_cloud()
-            print(world_obstacle_pose_stamp)
+            if world_obstacle_pose_stamp is None:
+                continue
             OBSTACLE_POINTS.publish(world_obstacle_pose_stamp)
         rate.sleep()
 

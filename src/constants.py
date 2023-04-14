@@ -57,9 +57,9 @@ Y_BOUNDS_MIN = -4.2 # meters
 Y_BOUNDS_MAX = 4.2 # meters
 
 #
-K = 4
-MIN_THRESHOLD = 0.5 # meters
-MAX_THRESHOLD = 2.0 # meters
+K = 50
+MIN_DIST = 0.5 # meters
+MAX_DIST = 2.0 # meters
 
 # PC clustering parameters
 LEAF_SIZE = 0.1

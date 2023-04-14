@@ -10,6 +10,7 @@
     <include file="$(find LawnMower)/launch/extrinsics.launch" />
 
     <include file="$(find LawnMower)/launch/stereo.launch" />
+    <node pkg="LawnMower" type="obstacle_detection_node.py" name="od_node" output="screen" />
     <!-- Launch challenge -->
     <!-- <node pkg="LawnMower" type="challenge4.py" name="challenge4" output="screen" /> -->
 
