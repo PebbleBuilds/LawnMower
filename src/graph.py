@@ -1,8 +1,9 @@
 import math
-import heapq
+import heapq 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import KDTree
+from constants import *
 
 def distance_point_line(obs, pt1, pt2):
     obs = obs[:2]
@@ -11,6 +12,11 @@ def distance_point_line(obs, pt1, pt2):
         return np.linalg.norm(np.cross(pt2-pt1, pt1-obs))/np.linalg.norm(pt2-pt1)
     else:
         return np.inf
+
+class Obstacle:
+    def __init__(self, center, is_clockwise):
+        self.center = center
+        self.clockwise = is_clockwise
 
 class Node:
     def __init__(self, waypoint, edges=[], next_wpt=None):
@@ -75,6 +81,20 @@ class DirectedGraph:
         
         return intersecting_edges
 
+    def reset(self):
+        self.graph = {}
+        self.waypoint_edges, self.obstacles = [], []
+
+    def update_obstacles(self, centers, types=None):
+        if types is None:
+            types = [obs.clockwise for obs in self.obstacles]
+        self.reset()
+        
+        graph.add_waypoints(self.main_waypoints)
+        for i in range(len(centers)):
+            graph.add_obstacle(centers[i], OBS_RADIUS, types[i], num_points=NUM_OBSTACLE_POINTS, fos=FOS)
+        return
+
     def add_obstacle(self, center, radius, clockwise, num_points=8, fos=1.5):
         """
         Adds an obstacle to the graph and appropriately wires it to other nodes
@@ -83,7 +103,7 @@ class DirectedGraph:
         intersecting_edges = self.find_intersecting_edges(center, radius*fos)
         average_z = np.mean([edge.start[-1]+edge.end[-1] for edge in intersecting_edges])/2
         center = center + (average_z,)
-        self.obstacles.append(center)
+        self.obstacles.append(Obstacle(center, clockwise))
 
         center = np.array(center)
         np_arr_points = np.array([
@@ -108,7 +128,7 @@ class DirectedGraph:
         for edge in intersecting_edges:
             _, neighbors = kdtree.query(edge.start, k=num_points//2)
             for idx in neighbors:
-                dists = np.array([distance_point_line(obs, edge.start, points[idx]) for obs in self.obstacles[:-1]])
+                dists = np.array([distance_point_line(obs.center, edge.start, points[idx]) for obs in self.obstacles[:-1]])
                 if not np.any(dists<radius*fos) and not self.is_reverse(Edge(edge.start, points[idx]), points[idx]):
                     # breakpoint()
                     self.add_edge(edge.start, points[idx])
@@ -116,7 +136,7 @@ class DirectedGraph:
 
             _, neighbors = kdtree.query(edge.end, k=num_points//2)
             for idx in neighbors:
-                dists = np.array([distance_point_line(obs, points[idx], edge.end) for obs in self.obstacles[:-1]])
+                dists = np.array([distance_point_line(obs.center, points[idx], edge.end) for obs in self.obstacles[:-1]])
                 if not np.any(dists<radius*fos) and not self.is_reverse(Edge(points[idx], edge.end), points[idx]):
                     self.add_edge(points[idx],edge.end)
                     self.waypoint_edges.append(self.graph[points[idx]].edges[-1])
@@ -132,7 +152,7 @@ class DirectedGraph:
         Adds major waypoints to the graph. To be called at the beginning of the task before
         adding pbstacles.
         """
-        self.waypoints = waypoints
+        self.main_waypoints = waypoints
         for i in range(len(waypoints)-1):
             self.add_node(waypoints[i], next_wpt= waypoints[i+1])
         self.add_node(waypoints[-1])
@@ -220,27 +240,20 @@ class DirectedGraph:
             ax.scatter(self.path[:,0], self.path[:,1], s=500, alpha=0.5, color=[0,1,0])
 
         for obs in self.obstacles:
-            circle = plt.Circle(obs, 2, color='r')
+            circle = plt.Circle(obs.center, 2, color='r')
             ax.add_patch(circle)
 
         plt.show()
 
 
 # Example
-# fos=2
-# num_points = 6
-# graph = DirectedGraph()
-# waypoints=[(1,1, 2), (25,45, 4), (60, 60, 5), (40, 2, 6), (2,40, 3)]
-# graph.add_waypoints(waypoints)
-# graph.add_obstacle((10,10), 2, True, num_points=num_points, fos=fos)
-# graph.add_obstacle((30,30), 2, False, num_points=num_points, fos=fos)
-# graph.add_obstacle((45,50), 2, False, num_points=num_points, fos=fos)
-# graph.add_obstacle((10,30), 2, False, num_points=num_points, fos=fos)
+graph = DirectedGraph()
+waypoints=[(1,1, 2), (25,45, 4), (60, 60, 5), (40, 2, 6), (2,40, 3)]
+obstacles = [(10,10), (30,30), (45,50), (10,30)]
+graph.add_waypoints(waypoints)
+graph.update_obstacles(obstacles, INITIAL_OBSTACLE_CLOCKWISE)
 
-# print(graph.modify_path(waypoints[0],waypoints[-2]))
-# breakpoint()
-# graph.render()
+graph.render()
+graph.update_obstacles([(8,10), (25,35), (50,45), (30,10)])
+graph.render()
 
-# while True:
-#     graph.print_full_path(waypoints[0])
-#     breakpoint()

@@ -10,7 +10,7 @@ from constants import *
 from constants import *
 from waypoint_follower import WaypointFollower
 from graph import DirectedGraph
-from pose_utils import posestamped2np
+from pose_utils import posestamped2np, euler_to_quaternion, get_yaw
 
 class WaypointPlanner(DirectedGraph):
     def __init__(
@@ -68,8 +68,7 @@ def callback_waypoints(msg):
     WP.add_waypoints([posestamped2np(pose for pose in msg.poses)])
 
 def callback_obstacle_pos(msg)
-    # WP.add_obstacle(posestamped2np(pose), )
-    self.next_obstacle_pos = msg
+    self.obstacles_poses = [pose2np(pose) for pose in msg]
 
 def callback_obstacle_type(msg);
     self.next_obstacle_type = msg
@@ -85,7 +84,7 @@ def planning_node():
     # subscribers
     rospy.Subscriber(WAYPOINTS_TOPIC, PoseArray, callback_waypoints)
     rospy.Subscriber(OBSTACLE_POS_TOPIC, PoseStamped, callback_obstacle_pos)
-    rospy.Subscriber(OBSTACLE_TYPE_TOPIC, PoseStamped, callback_obstacle_type)
+    # rospy.Subscriber(OBSTACLE_TYPE_TOPIC, PoseStamped, callback_obstacle_type)
 
 
     # publishers
@@ -93,10 +92,9 @@ def planning_node():
 
     while not rospy.is_shutdown():        
         if WP.next_obstacle_pos not in WP.obstacles:
-            rospy.loginfo("Adding obstacle at %s of type %r with radius %d and effective radius %d" % (str(WP.next_obstacle_pos), WP.next_obstacle_type, RADIUS, FOS*RADIUS)
-)
-            WP.add_obstacle(WP.next_obstacle_pos, OBS_RADIUS, WP.next_obstacle_type,FOS)
-            WP.modify_path(WP.current_waypoint, WP.get_next_wpt())
+            # rospy.loginfo("Adding obstacle at %s of type %r with radius %d and effective radius %d" % (str(WP.next_obstacle_pos), WP.next_obstacle_type, RADIUS, FOS*RADIUS))
+            WP.update_obstacles(WP.obstacles_poses, INITIAL_OBSTACLE_CLOCKWISE)
+            WP.modify_path(WP.current_waypoint, WP.get_next_wpt)
         
         if WP.current_waypoint is None: # If going to launch waypoint
             WP.next_waypoint = WP.launch_waypoint
@@ -110,6 +108,16 @@ def planning_node():
             WP.current_waypoint = WP.next_waypoint
             WP.next_waypoint = WP.get_next_wpt(WP.current_waypoint)
         
+        if WP.next_waypoint in WP.main_waypoints:
+            next_orientation = euler_to_quaternion(get_yaw(WP.current_waypoint[:2]
+                                                    WP.next_waypoint[:2]))
+
+        self.next_setpoint = create_posestamped(
+            WP.next_waypoint,
+            orientation=next_orientation,  # checkerboard wall
+            frame_id=VICON_ORIGIN_FRAME_ID,
+        )
+
         wp_pub.publish(WP.next_waypoint)
         rospy.sleep(0.2)
 

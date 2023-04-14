@@ -33,9 +33,6 @@ OBSTACLE_TYPE_TOPIC = "dummy_obs_type"
 # Publisher topics
 PLANNER = "next_waypoint"
 
-# Obstacle constants
-OBS_RADIUS = 0.2
-FOS = 1/0.2
 PC_TOPIC = "/camera/points2"
 POINT_CLOUD_TOPIC = "/camera/pointcloud2"
 CLOSEST_OBSTACLE_TOPIC = "/locate_closest_obstacle_node"
@@ -51,6 +48,9 @@ DROP_FRAMES = 3
 # obstacle parameters
 OBSTACLE_RADIUS = 0.3 # meters
 OBSTACLE_HEIGHT = 2.0 # meters
+OBS_RADIUS = 3
+FOS = (1+OBS_RADIUS)/OBS_RADIUS
+NUM_OBSTACLE_POINTS = 8
 NUM_OBSTACLES = 4
 INITIAL_OBSTACLE_POSITIONS = np.array([
     [0.0, 0.0],
@@ -58,6 +58,7 @@ INITIAL_OBSTACLE_POSITIONS = np.array([
     [0.0, 0.0],
     [0.0, 0.0]
 ])
+INITIAL_OBSTACLE_CLOCKWISE = [True, True, False, False]
 
 #
 K = 4
