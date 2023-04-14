@@ -38,13 +38,16 @@ BASELINE = -18.2928466796875/286.1825866699219 # 64 mm baseline
 # obstacle parameters
 OBSTACLE_RADIUS = 0.3 # meters
 OBSTACLE_HEIGHT = 2.0 # meters
-NUM_OBSTACLES = 4
+# 1 obstacle per quadrant
 INITIAL_OBSTACLE_POSITIONS = np.array([
-    [0.0, 0.0],
-    [0.0, 0.0],
-    [0.0, 0.0],
-    [0.0, 0.0]
+    [1, 1],
+    [1, -1],
+    [-1, -1],
+    [-1, 1], 
 ])
+NUM_OBSTACLES = INITIAL_OBSTACLE_POSITIONS.shape[0]
+
+TRACKER_OUTPUT_TOPIC = "tracker_output"
 
 # PC clustering parameters
 LEAF_SIZE = 0.1

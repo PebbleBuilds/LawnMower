@@ -3,53 +3,56 @@
 import rospy
 from filterpy.common import Q_discrete_white_noise
 from filterpy.kalman import KalmanFilter
-from geometry_msgs.msg import Pose, PoseArray
+from geometry_msgs.msg import Pose, PoseArray, Point
 import copy
 from constants import *
 
 KALMAN_PUB = None
-FILTER = KalmanFilter(dim_x=2 * NUM_OBSTACLES, dim_z=2 * NUM_OBSTACLES)
-FILTER.x = INITIAL_OBSTACLE_POSITIONS.flatten()
-FILTER.F = np.eye(2 * NUM_OBSTACLES)
-FILTER.H = np.eye(2 * NUM_OBSTACLES)
+_filter = KalmanFilter(dim_x=2, dim_z=2)
+_filter.F = np.eye(2)
+_filter.H = np.eye(2)
 # todo put in constants
-FILTER.R = 0.1 * np.eye(2 * NUM_OBSTACLES)
-FILTER.P = 1000 * np.eye(2 * NUM_OBSTACLES)
-FILTER.Q = Q_discrete_white_noise(dim=2, dt=0.1, var=0.01)
-FILTERS = [copy.deepcopy(FILTER) for _ in range(NUM_OBSTACLES)]
+_filter.R = 0.1 * np.eye(2)
+_filter.P = 1000 * np.eye(2)
+_filter.Q = Q_discrete_white_noise(dim=2, dt=0.1, var=0.01)
+FILTERS = [copy.deepcopy(_filter) for _ in range(NUM_OBSTACLES)]
+# assign corresponding initial state to each filter
+for i, filter in enumerate(FILTERS):
+    filter.x = INITIAL_OBSTACLE_POSITIONS[i]
 
 def detections_cb(msg):
-    # dissect pose array into a series of detections
-    detections = []
-    for pose in msg.poses:
-        detections.append(np.array([pose.position.x, pose.position.y]))
-    detections = np.vstack(detections)
-    # perform data association with greedy algorithm between detections and objects
-    # compute smallest distance between each detection and each object
-    assigned_detections = np.zeros((NUM_OBSTACLES, 2))
-    obstacle_positions = FILTER.x.reshape(NUM_OBSTACLES, 2)
-    remaining_detections = detections.copy()
-    for i, obstacle_position in enumerate(obstacle_positions):
-        # compute distance between each detection and object
-        distances = np.linalg.norm(remaining_detections - obstacle_position, axis=1)
-        # find detection with smallest distance
-        min_index = np.argmin(distances)
-        # assign detection to object with smallest distance
-        assigned_detections[i, :] = remaining_detections[min_index, :]  # (x, y)
-        # remove detection from remaining detections
-        remaining_detections = np.delete(remaining_detections, min_index, axis=0)
+    global FILTERS
+    if KALMAN_PUB is None:
+        rospy.loginfo("Waiting for kalman filter publisher")
+        return
+    point = msg.point
+    point_frame_id = msg.header.frame_id
+    assert point_frame_id == VICON_DUMMY_FRAME_ID, "detections must be in vicon frame"
+    # determine the quadrant of the point
+    if point.x > 0 and point.y > 0:
+        quadrant = 0
+    elif point.x < 0 and point.y > 0:
+        quadrant = 1
+    elif point.x < 0 and point.y < 0:
+        quadrant = 2
+    else:
+        quadrant = 3
+    # update the corresponding kalman filter
+    filter = FILTERS[quadrant]
+
     # update kalman filter
-    assigned_detections = assigned_detections.flatten()
-    FILTER.update(assigned_detections)
+    filter.update(np.array([point.x, point.y]))
+
     # convert kalman filter output to pose array
     tracked_poses = PoseArray()
     tracked_poses.header.stamp = rospy.Time.now()
     tracked_poses.header.frame_id = VICON_DUMMY_FRAME_ID
     for i in range(NUM_OBSTACLES):
         pose = Pose()
-        pose.position.x = FILTER.x[2 * i]
-        pose.position.y = FILTER.x[2 * i + 1]
+        pose.position.x = filter.x[0]
+        pose.position.y = filter.x[1]
         tracked_poses.poses.append(pose)
+
     # publish kalman filter output
     KALMAN_PUB.publish(tracked_poses)
 
@@ -57,8 +60,8 @@ def detections_cb(msg):
 if __name__ == "__main__":
     rospy.init_node("kalman_filter_node")
     # subscribers
-    rospy.Subscriber("/obstacles/detections", PoseArray, detections_cb)
+    rospy.Subscriber("/obstacles/detections", PointStamped, detections_cb)
     # publishers
-    KALMAN_PUB = rospy.Publisher("/obstacles/tracked", PoseArray, queue_size=1)
+    KALMAN_PUB = rospy.Publisher(TRACKER_OUTPUT_TOPIC, PoseArray, queue_size=1)
     while not rospy.is_shutdown():
         pass
