@@ -103,7 +103,7 @@ def planning_node():
         ) 
         
         if dist < WP.radius:
-            WP.update_graph(WP.obstacles_poses, WP,main_waypoints[:WP.next_waypoint_idx+1], INITIAL_OBSTACLE_CLOCKWISE)
+            WP.update_graph(WP.obstacles_poses, WP,main_waypoints[WP.next_waypoint_idx-1:WP.next_waypoint_idx+1], INITIAL_OBSTACLE_CLOCKWISE)
             WP.modify_path(WP.current_waypoint, WP.get_next_wpt)
             WP.current_waypoint = WP.next_waypoint
             WP.next_waypoint = WP.get_next_wpt(WP.current_waypoint)
