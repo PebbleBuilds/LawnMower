@@ -6,8 +6,10 @@ import numpy as np
 import rospy
 import tf2_ros
 
-from pose_utils import create_posestamped, posestamped2np, tfstamped2posestamped
+from pose_utils import create_posestamped, posestamped2np, tfstamped2posestamped, pose2np
 from constants import *
+from geometry_msgs.msg import PoseStamped, PoseArray
+from std_msgs.msg import Header
 
 
 class WaypointFollower:
@@ -51,6 +53,8 @@ class WaypointFollower:
 
         self.last_setpoint_world = self.origin_setpoint
 
+        self.start_time = None
+
     def set_waypoints(self, waypoints):
         if self.waypoints_received:
             return
@@ -64,7 +68,6 @@ class WaypointFollower:
         self.state = state
 
     def get_setpoint(self):
-        # print("State: " + self.state)
         if self.state == LAUNCH:
             # set setpoint to point above origin
             setpoint_world = self.origin_setpoint
@@ -105,7 +108,7 @@ class WaypointFollower:
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
-            rospy.loginfo(
+            rospy.logwarn(
                 "Waiting for transform from vicon to drone. Returning last setpoint."
             )
             return None
@@ -129,11 +132,11 @@ class WaypointFollower:
         # check distance to current waypoint
         dist = np.linalg.norm(
             posestamped2np(self.get_current_pose_world())
-            - posestamped2np(self.waypoints_world[self.global_waypoint_idx])
+            - pose2np(self.waypoints_world[self.global_waypoint_idx])
         )
         # if within radius, increment timer
         if dist < self.radius and self.start_time is None:
-            rospy.loginfo("starting timer on waypoint", self.global_waypoint_idx)
+            rospy.loginfo("starting timer on waypoint {}".format(self.global_waypoint_idx))
             self.start_time = rospy.get_time()
         # if timer exceeds hold_time, increment waypoint
         if (
@@ -147,10 +150,14 @@ class WaypointFollower:
                 )
             )
             # if waypoint index exceeds number of waypoints, reset to 0
-            if self.global_waypoint_idx >= self.waypoints_world.shape[0]:
+            if self.global_waypoint_idx >= len(self.waypoints_world):
                 self.global_waypoint_idx = 0
                 rospy.loginfo("Waypoints complete. Resetting to first waypoint.")
             # reset timer
             self.start_time = None
         setpoint = self.waypoints_world[self.global_waypoint_idx]
+        # convert from Pose to PoseStamped
+        setpoint = PoseStamped(
+            pose=setpoint, header=Header(frame_id=VICON_DUMMY_FRAME_ID)
+        )
         return setpoint
