@@ -107,7 +107,7 @@ def main():
     rospy.Subscriber(POINT_CLOUD_TOPIC, PointCloud2, update_point_cloud)
 
     # Publishers
-    OBSTACLE_POINTS = rospy.Publisher(CLOSEST_OBSTACLE_TOPIC, PointStamped, queue_size=1)
+    OBSTACLE_POINTS = rospy.Publisher(OBSTACLE_DETECTION_OUTPUT, PointStamped, queue_size=1)
     rate = rospy.Rate(10)
     rospy.loginfo("initialized obstacle detection node")
     while not rospy.is_shutdown():

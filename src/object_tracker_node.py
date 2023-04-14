@@ -3,7 +3,7 @@
 import rospy
 from filterpy.common import Q_discrete_white_noise
 from filterpy.kalman import KalmanFilter
-from geometry_msgs.msg import Pose, PoseArray, Point
+from geometry_msgs.msg import Pose, PoseArray, Point, PointStamped
 import copy
 from constants import *
 
@@ -60,7 +60,7 @@ def detections_cb(msg):
 if __name__ == "__main__":
     rospy.init_node("kalman_filter_node")
     # subscribers
-    rospy.Subscriber("/obstacles/detections", PointStamped, detections_cb)
+    rospy.Subscriber(OBSTACLE_DETECTION_OUTPUT, PointStamped, detections_cb)
     # publishers
     KALMAN_PUB = rospy.Publisher(TRACKER_OUTPUT_TOPIC, PoseArray, queue_size=1)
     while not rospy.is_shutdown():

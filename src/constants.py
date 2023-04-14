@@ -29,7 +29,7 @@ WAYPOINTS_TOPIC = "/{}/comm/waypoints".format(NAME)
 MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
 PC_TOPIC = "/camera/points2"
 POINT_CLOUD_TOPIC = "/camera/pointcloud2"
-CLOSEST_OBSTACLE_TOPIC = "/locate_closest_obstacle_node"
+OBSTACLE_DETECTION_OUTPUT = "/od_output"
 
 # stereo camera constants
 H, W = 800, 848
