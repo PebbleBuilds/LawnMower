@@ -1,5 +1,7 @@
 import math
 import heapq 
+import matplotlib  
+matplotlib.use('TkAgg')  
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial import KDTree
@@ -152,6 +154,7 @@ class DirectedGraph:
         Adds major waypoints to the graph. To be called at the beginning of the task before
         adding pbstacles.
         """
+        waypoints = [tuple(pt) for pt in waypoints]
         self.main_waypoints = waypoints
         for i in range(len(waypoints)-1):
             self.add_node(waypoints[i], next_wpt= waypoints[i+1])
@@ -240,20 +243,20 @@ class DirectedGraph:
             ax.scatter(self.path[:,0], self.path[:,1], s=500, alpha=0.5, color=[0,1,0])
 
         for obs in self.obstacles:
-            circle = plt.Circle(obs.center, 2, color='r')
+            circle = plt.Circle(obs.center, OBSTACLE_RADIUS, color='r')
             ax.add_patch(circle)
 
         plt.show()
 
 
 # Example
-# graph = DirectedGraph()
-# waypoints=[(1,1, 2), (25,45, 4), (40, 2, 6), (2,40, 3)]
-# obstacles = [(10,10), (60,60), (80,80), (90,90)]
-# graph.add_waypoints(waypoints)
-# graph.update_obstacles(obstacles, INITIAL_OBSTACLE_CLOCKWISE)
+graph = DirectedGraph()
+waypoints=[(1,1, 2), (25,45, 4), (40, 2, 6), (2,40, 3)]
+obstacles = [(10,10), (60,60), (80,80), (90,90)]
+graph.add_waypoints([np.array(pt) for pt in waypoints])
+graph.update_obstacles(obstacles, INITIAL_OBSTACLE_CLOCKWISE)
 
-# graph.render()
-# graph.update_obstacles([(8,10), (25,35), (50,45), (30,10)])
-# graph.render()
+graph.render()
+graph.update_obstacles([(8,10), (25,35), (50,45), (30,10)])
+graph.render()
 

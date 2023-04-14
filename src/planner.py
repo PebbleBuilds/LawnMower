@@ -50,8 +50,8 @@ class WaypointPlanner(DirectedGraph):
 
     def get_current_pose_world(self):
         try:
-            t = self.listener.lookupTransform(
-                VICON_ORIGIN_FRAME_ID, DRONE_FRAME_ID, rospy.Time(0)
+            t = self.tf_buffer.lookup_transform(
+                VICON_DUMMY_FRAME_ID, DRONE_FRAME_ID, rospy.Time(0)
             )
             return tfstamped2posestamped(t)
         except (
@@ -59,14 +59,14 @@ class WaypointPlanner(DirectedGraph):
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
         ):
-            rospy.loginfo(
-                "Waiting for transform from vicon to local origin. Returning last setpoint."
+            rospy.logwarn(
+                "Waiting for transform from vicon to drone. Returning last setpoint."
             )
             return None
 
 
 def callback_waypoints(msg):
-    WP.add_waypoints([posestamped2np(pose for pose in msg.poses)])
+    WP.add_waypoints([posestamped2np(pose) for pose in msg.poses])
 
 def callback_obstacle_pos(msg):
     WP.obstacles_poses = [pose2np(pose) for pose in msg]
@@ -97,7 +97,7 @@ def planning_node():
         
         dist = np.linalg.norm(
             posestamped2np(WP.get_current_pose_world())
-            - posestamped2np(WP.next_waypoint)
+            - WP.next_waypoint
         ) 
         
         if dist < WP.radius:
