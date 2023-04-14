@@ -56,8 +56,8 @@ class WaypointFollower:
         self.start_time = None
 
     def set_waypoints(self, waypoints):
-        if self.waypoints_received:
-            return
+        #if self.waypoints_received:
+        #    return
         print("Setting waypoints: \n", waypoints)
         # convert from vicon_world frame to vicon_inertial frame
         self.waypoints_world = waypoints
@@ -161,3 +161,4 @@ class WaypointFollower:
             pose=setpoint, header=Header(frame_id=VICON_DUMMY_FRAME_ID)
         )
         return setpoint
+        

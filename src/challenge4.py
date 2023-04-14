@@ -7,6 +7,7 @@ from std_srvs.srv import Empty, EmptyResponse
 
 from constants import *
 from waypoint_follower import WaypointFollower
+from pose_utils import posestamped2np
 
 WF = None
 
@@ -34,10 +35,10 @@ def callback_abort(request):
     WF.set_state(ABORT)
     return EmptyResponse()
 
-
-def callback_waypoints(msg):
-    WF.set_waypoints(msg.poses)
-
+def callback_planner(msg):
+    wf_waypoints = PoseArray()
+    wf_waypoints.poses = [msg.pose]
+    WF.set_waypoints(wf_waypoints)
 
 # Main node
 def comm_node():
@@ -59,7 +60,7 @@ def comm_node():
     rospy.Service(LAND_TOPIC, Empty, callback_land)
     rospy.Service(ABORT_TOPIC, Empty, callback_abort)
     # subscribers
-    rospy.Subscriber(WAYPOINTS_TOPIC, PoseArray, callback_waypoints)
+    rospy.Subscriber(PLANNER, PoseArray, callback_setpoint)
     # publishers
     sp_pub = rospy.Publisher(MAVROS_SETPOINT_TOPIC, PoseStamped, queue_size=1)
     rospy.loginfo("Services, subscribers, publishers initialized")

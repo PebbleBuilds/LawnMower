@@ -27,6 +27,12 @@ MAVROS_POSE_TOPIC = "/mavros/local_position/pose"
 VICON_POSE_TOPIC = "/vicon/ROB498_Drone/ROB498_Drone"
 WAYPOINTS_TOPIC = "/{}/comm/waypoints".format(NAME)
 MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
+OBSTACLE_POS_TOPIC = "dummy_obs_pose"
+OBSTACLE_TYPE_TOPIC = "dummy_obs_type"
+
+# Publisher topics
+PLANNER = "next_waypoint"
+
 PC_TOPIC = "/camera/points2"
 POINT_CLOUD_TOPIC = "/camera/points2"
 CLOSEST_OBSTACLE_TOPIC = "/locate_closest_obstacle_node"
@@ -40,8 +46,10 @@ BASELINE = -18.2928466796875/286.1825866699219 # 64 mm baseline
 DROP_FRAMES = 3
 
 # obstacle parameters
-OBSTACLE_RADIUS = 0.3 # meters
+OBSTACLE_RADIUS = 1 # meters
 OBSTACLE_HEIGHT = 2.0 # meters
+FOS = 1
+NUM_OBSTACLE_POINTS = 8
 NUM_OBSTACLES = 4
 INITIAL_OBSTACLE_POSITIONS = np.array([
     [0.0, 0.0],
@@ -49,6 +57,7 @@ INITIAL_OBSTACLE_POSITIONS = np.array([
     [0.0, 0.0],
     [0.0, 0.0]
 ])
+INITIAL_OBSTACLE_CLOCKWISE = [True, True, False, False]
 
 # arena boundary, anything outside detected should be ignored
 X_BOUNDS_MIN = -6.0 # meters

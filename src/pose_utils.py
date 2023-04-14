@@ -56,3 +56,33 @@ def pose2np(pose):
 
 def np2posestamped(pose):
     return create_posestamped(pose)
+
+def get_yaw(point1, point2):
+    dx = point2[0] - point1[0]
+    dy = point2[1] - point1[1]
+    
+    yaw = np.arctan2(dy, dx)
+    
+    return yaw
+
+def euler_to_quaternion(roll, pitch, yaw):
+    """
+    Converts Euler angles to quaternion
+    :param roll: Roll angle in radians
+    :param pitch: Pitch angle in radians
+    :param yaw: Yaw angle in radians
+    :return: Quaternion tuple (w, x, y, z)
+    """
+    cy = np.cos(yaw * 0.5)
+    sy = np.sin(yaw * 0.5)
+    cp = np.cos(pitch * 0.5)
+    sp = np.sin(pitch * 0.5)
+    cr = np.cos(roll * 0.5)
+    sr = np.sin(roll * 0.5)
+
+    w = cy * cp * cr + sy * sp * sr
+    x = cy * cp * sr - sy * sp * cr
+    y = sy * cp * sr + cy * sp * cr
+    z = sy * cp * cr - cy * sp * sr
+
+    return [w, x, y, z]
