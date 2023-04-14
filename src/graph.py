@@ -95,7 +95,7 @@ class DirectedGraph:
             graph.add_obstacle(centers[i], OBSTACLE_RADIUS, types[i], num_points=NUM_OBSTACLE_POINTS, fos=FOS)
         return
 
-    def add_obstacle(self, center, radius, clockwise, num_points=8, fos=1.5):
+    def add_obstacle(self, center, radius, clockwise, num_points=NUM_OBSTACLE_POINTS, fos=FOS):
         """
         Adds an obstacle to the graph and appropriately wires it to other nodes
         based on whether it lies within the trajectory between two waypoints
@@ -248,8 +248,8 @@ class DirectedGraph:
 
 # Example
 graph = DirectedGraph()
-waypoints=[(1,1, 2), (25,45, 4), (60, 60, 5), (40, 2, 6), (2,40, 3)]
-obstacles = [(10,10), (30,30), (45,50), (10,30)]
+waypoints=[(1,1, 2), (25,45, 4), (40, 2, 6), (2,40, 3)]
+obstacles = [(10,10), (60,60), (80,80), (90,90)]
 graph.add_waypoints(waypoints)
 graph.update_obstacles(obstacles, INITIAL_OBSTACLE_CLOCKWISE)
 

@@ -68,10 +68,10 @@ def callback_waypoints(msg):
     WP.add_waypoints([posestamped2np(pose for pose in msg.poses)])
 
 def callback_obstacle_pos(msg)
-    self.obstacles_poses = [pose2np(pose) for pose in msg]
+    WP.obstacles_poses = [pose2np(pose) for pose in msg]
 
 def callback_obstacle_type(msg);
-    self.next_obstacle_type = msg
+    WP.next_obstacle_type = msg
 
 
 def planning_node():
@@ -90,12 +90,7 @@ def planning_node():
     # publishers
     wp_pub = rospy.Publisher(PLANNER, PoseStamped, queue_size=1)
 
-    while not rospy.is_shutdown():        
-        if WP.next_obstacle_pos not in WP.obstacles:
-            # rospy.loginfo("Adding obstacle at %s of type %r with radius %d and effective radius %d" % (str(WP.next_obstacle_pos), WP.next_obstacle_type, RADIUS, FOS*RADIUS))
-            WP.update_obstacles(WP.obstacles_poses, INITIAL_OBSTACLE_CLOCKWISE)
-            WP.modify_path(WP.current_waypoint, WP.get_next_wpt)
-        
+    while not rospy.is_shutdown():
         if WP.current_waypoint is None: # If going to launch waypoint
             WP.next_waypoint = WP.launch_waypoint
         
@@ -105,6 +100,8 @@ def planning_node():
         ) 
         
         if dist < WP.radius:
+            WP.update_obstacles(WP.obstacles_poses, INITIAL_OBSTACLE_CLOCKWISE)
+            WP.modify_path(WP.current_waypoint, WP.get_next_wpt)
             WP.current_waypoint = WP.next_waypoint
             WP.next_waypoint = WP.get_next_wpt(WP.current_waypoint)
         
@@ -118,7 +115,8 @@ def planning_node():
             frame_id=VICON_ORIGIN_FRAME_ID,
         )
 
-        wp_pub.publish(WP.next_waypoint)
+        if WP.next_waypoint != WP.main_waypoints[-1]:
+            wp_pub.publish(WP.next_waypoint)
         rospy.sleep(0.2)
 
 
