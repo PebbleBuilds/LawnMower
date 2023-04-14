@@ -29,8 +29,7 @@ def create_posestamped(
 
 def tfstamped2posestamped(tfstamped):
     posestamped = PoseStamped()
-    posestamped.pose = tf2_geometry_msgs.do_transform_pose(posestamped.pose, tfstamped)
-    posestamped.header = tfstamped.header
+    posestamped = tf2_geometry_msgs.do_transform_pose(posestamped, tfstamped)
     return posestamped
 
 def tfstamped2np(transformstamped, include_time=False):

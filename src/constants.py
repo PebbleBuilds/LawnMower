@@ -14,6 +14,7 @@ VICON_DUMMY_FRAME_ID = "vicon/dummy"
 DRONE_FRAME_ID = "vicon/ROB498_Drone/ROB498_Drone"
 BASE_LINK_FRAME_ID = "base_link"
 LOCAL_ORIGIN_FRAME_ID = "map"
+CLOUD_FRAME_ID = "camera_fisheye1_optical_frame"
 
 # Service topics
 LAUNCH_TOPIC = "/{}/comm/launch".format(NAME)
@@ -27,6 +28,8 @@ VICON_POSE_TOPIC = "/vicon/ROB498_Drone/ROB498_Drone"
 WAYPOINTS_TOPIC = "/{}/comm/waypoints".format(NAME)
 MAVROS_SETPOINT_TOPIC = "/mavros/setpoint_position/local"
 PC_TOPIC = "/camera/points2"
+POINT_CLOUD_TOPIC = "/camera/pointcloud2"
+CLOSEST_OBSTACLE_TOPIC = "/locate_closest_obstacle_node"
 
 # stereo camera constants
 H, W = 800, 848
@@ -48,6 +51,11 @@ INITIAL_OBSTACLE_POSITIONS = np.array([
 NUM_OBSTACLES = INITIAL_OBSTACLE_POSITIONS.shape[0]
 
 TRACKER_OUTPUT_TOPIC = "tracker_output"
+
+#
+K = 4
+MIN_THRESHOLD = 0.3 # meters
+MAX_THRESHOLD = 2.5 # meters
 
 # PC clustering parameters
 LEAF_SIZE = 0.1
