@@ -151,3 +151,4 @@ class WaypointFollower:
             self.start_time = None
         setpoint = self.waypoints_world[self.global_waypoint_idx]
         return setpoint
+        

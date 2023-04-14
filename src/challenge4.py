@@ -7,7 +7,6 @@ from std_srvs.srv import Empty, EmptyResponse
 
 from constants import *
 from waypoint_follower import WaypointFollower
-from graph import DirectedGraph
 from pose_utils import posestamped2np
 
 WF = None
@@ -47,7 +46,6 @@ def comm_node():
     # Do not change the node name and service topics!
     rospy.init_node(NAME)
     # TODO change params to get from launch file
-    graph = DirectedGraph()
     WF = WaypointFollower(
         radius=0.5,
         hold_time=1,
@@ -62,27 +60,12 @@ def comm_node():
     rospy.Service(LAND_TOPIC, Empty, callback_land)
     rospy.Service(ABORT_TOPIC, Empty, callback_abort)
     # subscribers
-    rospy.Subscriber(WAYPOINTS_TOPIC, PoseArray, callback_waypoints)
+    rospy.Subscriber(PLANNER, PoseArray, callback_setpoint)
     # publishers
     sp_pub = rospy.Publisher(MAVROS_SETPOINT_TOPIC, PoseStamped, queue_size=1)
     rospy.loginfo("Services, subscribers, publishers initialized")
 
-    while not rospy.is_shutdown():
-        """
-        Planning loic v1
-        while me not at the end:
-            me turn to next waypoint
-            if me see obstacle:`
-                me detect obstacle position
-                me detect obstacle type
-                me add obstacle(center, is_clockwise)
-                me do dijkstra to next waypoint
-                me get path
-                me convert path coordinates to waypoints
-                me do WF.set_waypoints(path_wpts)
-            me go BRRRRRR!
-        """
-        
+    while not rospy.is_shutdown():        
         setpoint = WF.get_setpoint()
         if setpoint is not None:
             sp_pub.publish(setpoint)

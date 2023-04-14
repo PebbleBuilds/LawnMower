@@ -1,7 +1,11 @@
-mport numpy as np
+import numpy as np
 import rospy
 from geometry_msgs.msg import PoseArray, PoseStamped, TransformStamped
 from std_srvs.srv import Empty, EmptyResponse
+import tf2_ros
+
+from pose_utils import create_posestamped, posestamped2np, tfstamped2posestamped
+from constants import *
 
 from constants import *
 from waypoint_follower import WaypointFollower
@@ -59,37 +63,6 @@ class WaypointPlanner(DirectedGraph):
             )
             return None
 
-    def handle_test(self):
-        # TODO reimplement dancing
-        # check distance to current waypoint
-        dist = np.linalg.norm(
-            posestamped2np(self.get_current_pose_world())
-            - posestamped2np(self.waypoints_world[self.global_waypoint_idx])
-        )
-        # if within radius, increment timer
-        if dist < self.radius and self.start_time is None:
-            rospy.loginfo("starting timer on waypoint", self.global_waypoint_idx)
-            self.start_time = rospy.get_time()
-        # if timer exceeds hold_time, increment waypoint
-        if (
-            self.start_time is not None
-            and rospy.get_time() - self.start_time > self.hold_time
-        ):
-            self.global_waypoint_idx += 1
-            rospy.loginfo(
-                "waypoint {} reached, indexing to next waypoint".format(
-                    self.global_waypoint_idx
-                )
-            )
-            # if waypoint index exceeds number of waypoints, reset to 0
-            if self.global_waypoint_idx >= self.waypoints_world.shape[0]:
-                self.global_waypoint_idx = 0
-                rospy.loginfo("Waypoints complete. Resetting to first waypoint.")
-            # reset timer
-            self.start_time = None
-        setpoint = self.waypoints_world[self.global_waypoint_idx]
-        return setpoint
-
 
 def callback_waypoints(msg):
     WP.add_waypoints([posestamped2np(pose for pose in msg.poses)])
@@ -111,19 +84,19 @@ def planning_node():
    
     # subscribers
     rospy.Subscriber(WAYPOINTS_TOPIC, PoseArray, callback_waypoints)
-    # rospy.Subscriber(OBSTACLE_POS_TOPIC, PoseStamped, callback_obstacle_pos)
-    # rospy.Subscriber(OBSTACLE_TYPE_TOPIC, PoseStamped, callback_obstacle_type)
+    rospy.Subscriber(OBSTACLE_POS_TOPIC, PoseStamped, callback_obstacle_pos)
+    rospy.Subscriber(OBSTACLE_TYPE_TOPIC, PoseStamped, callback_obstacle_type)
 
 
     # publishers
-    sp_pub = rospy.Publisher(PLANNER, PoseStamped, queue_size=1)
+    wp_pub = rospy.Publisher(PLANNER, PoseStamped, queue_size=1)
 
     while not rospy.is_shutdown():        
         if WP.next_obstacle_pos not in WP.obstacles:
             rospy.loginfo("Adding obstacle at %s of type %r with radius %d and effective radius %d" % (str(WP.next_obstacle_pos), WP.next_obstacle_type, RADIUS, FOS*RADIUS)
 )
             WP.add_obstacle(WP.next_obstacle_pos, OBS_RADIUS, WP.next_obstacle_type,FOS)
-            WP.modify_path(WP.waypoints[0], WP.waypoints[-1])
+            WP.modify_path(WP.current_waypoint, WP.get_next_wpt())
         
         if WP.current_waypoint is None: # If going to launch waypoint
             WP.next_waypoint = WP.launch_waypoint
@@ -137,7 +110,7 @@ def planning_node():
             WP.current_waypoint = WP.next_waypoint
             WP.next_waypoint = WP.get_next_wpt(WP.current_waypoint)
         
-        sp_pub.publish(WP.next_waypoint)
+        wp_pub.publish(WP.next_waypoint)
         rospy.sleep(0.2)
 
 
