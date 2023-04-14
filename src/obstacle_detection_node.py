@@ -52,11 +52,11 @@ def process_point_cloud():
     # Step 1: Reproject disparity map to 3D point cloud
     point_cloud = POINT_CLOUD.copy()
 
-    # Step 3: Filter out points with depth value less than and greater than thresholds
+    # Step 2: Filter out points with depth value less than and greater than thresholds
     mask = np.logical_and(point_cloud[:,1] > MIN_THRESHOLD, point_cloud[:,1] < MAX_THRESHOLD)
     point_cloud = point_cloud[mask]
 
-    # Step 4: Find the k closest obstacles to the drone using euclidean distance from the principal point
+    # Step 3: Find the k closest obstacles to the drone using euclidean distance from the principal point
     # Assume principal point is at (0,0,0) in point cloud frame
     distances = np.linalg.norm(point_cloud, axis=1)
     closest_k_obstacles_inds = np.argsort(distances)[:K]

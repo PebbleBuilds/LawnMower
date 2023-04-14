@@ -50,10 +50,16 @@ INITIAL_OBSTACLE_POSITIONS = np.array([
     [0.0, 0.0]
 ])
 
+# arena boundary, anything outside detected should be ignored
+X_BOUNDS_MIN = -6.0 # meters
+X_BOUNDS_MAX = 6.0 # meters
+Y_BOUNDS_MIN = -4.2 # meters
+Y_BOUNDS_MAX = 4.2 # meters
+
 #
 K = 4
-MIN_THRESHOLD = 0.3 # meters
-MAX_THRESHOLD = 2.5 # meters
+MIN_THRESHOLD = 0.5 # meters
+MAX_THRESHOLD = 2.0 # meters
 
 # PC clustering parameters
 LEAF_SIZE = 0.1
