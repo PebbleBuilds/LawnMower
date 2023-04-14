@@ -41,6 +41,9 @@ def update_point_cloud(msg):
     POINT_CLOUD = np.array(list(read_points(msg, skip_nans=True, field_names=("x", "y", "z"))))
     if POINT_CLOUD.shape[0] == 0 or len(POINT_CLOUD.shape)!=2 or POINT_CLOUD.shape[1]!=3:
         return
+    # filter NAN
+    mask = np.logical_not(np.isnan(POINT_CLOUD).any(axis=1))
+    POINT_CLOUD = POINT_CLOUD[mask]
     PC_HEADER = msg.header
     # plt.scatter(POINT_CLOUD[:,0], POINT_CLOUD[:,2])\
     plt.Circle((0,0), 5)
@@ -55,7 +58,10 @@ def process_point_cloud():
     point_cloud = POINT_CLOUD.copy()
 
     # Step 2: Filter out points with depth value less than and greater than thresholds
-    mask = np.logical_and(point_cloud[:,2] > MIN_DIST, point_cloud[:,2] < MAX_DIST)
+    try:
+        mask = np.logical_and(point_cloud[:,2] > MIN_DIST, point_cloud[:,2] < MAX_DIST)
+    except:
+        return None
     point_cloud = point_cloud[mask]
 
     # Step 3: Find the k closest obstacles to the drone using euclidean distance from the principal point
