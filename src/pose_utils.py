@@ -8,7 +8,7 @@ from constants import *
 
 
 def create_posestamped(
-    pose_xyz=[0, 0, 0], orientation=[0, 0, 0, 1], frame_id=VICON_ORIGIN_FRAME_ID
+    pose_xyz=[0, 0, 0], orientation=[0, 0, 0, 1], frame_id=VICON_DUMMY_FRAME_ID
 ):
     pose_stamped = PoseStamped()
     assert len(pose_xyz) == 3, "Pose must be a 3D vector"
@@ -24,13 +24,12 @@ def create_posestamped(
     pose_stamped.pose.orientation.w = w_o
 
     pose_stamped.header.frame_id = frame_id
-    pose_stamped.header.stamp = rospy.Time.now()
+    pose_stamped.header.stamp = rospy.Time(0)
     return pose_stamped
 
 def tfstamped2posestamped(tfstamped):
     posestamped = PoseStamped()
-    posestamped.pose = tf2_geometry_msgs.do_transform_pose(posestamped.pose, tfstamped)
-    posestamped.header = tfstamped.header
+    posestamped = tf2_geometry_msgs.do_transform_pose(posestamped, tfstamped)
     return posestamped
 
 def tfstamped2np(transformstamped, include_time=False):

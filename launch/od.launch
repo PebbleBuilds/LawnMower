@@ -1,0 +1,45 @@
+<launch>
+
+    <arg name="gui" default="true" />
+    <arg name="leaf_size" default="0.02" />
+    
+    <node name="voxel_grid" 
+            pkg="nodelet" 
+            type="nodelet" 
+            args="standalone pcl/VoxelGrid">
+        <remap from="~input" to="/camera/points2" />
+        <rosparam subst_value="true">
+            filter_field_name: ''
+            leaf_size: $(arg leaf_size)
+        </rosparam>
+    </node>
+
+    <node name="extract_clusters"
+            pkg="nodelet" type="nodelet"
+            args="standalone pcl/EuclideanClusterExtraction">
+      <remap from="~input" to="voxel_grid/output" />
+      <rosparam>
+        cluster_tolerance: 0.03
+        spatial_locator: 1  # FLANN
+      </rosparam>
+    </node>
+  
+    <group if="$(arg gui)">
+        <node name="rviz"
+              pkg="rviz" type="rviz"
+              args="-d $(find pcl_ros)/samples/pcl_ros/filters/config/voxel_grid.rviz">
+        </node>
+      </group>
+    <!-- TODO(wkentaro): Add sample visualization
+    <group if="$(arg gui)">
+      <node name="rviz"
+            pkg="rviz" type="rviz"
+            args="-d $(find pcl_ros)/samples/pcl_ros/segmentation/config/extract_clusters.rviz">
+      </node>
+    </group>
+    -->
+  
+    <node pkg="LawnMower" type="object_tracker_node.py" name="object_tracker" output="screen">
+    </node>
+
+</launch>
