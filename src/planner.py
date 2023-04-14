@@ -47,6 +47,8 @@ class WaypointPlanner(DirectedGraph):
         )
         self.current_waypoint = None
         self.next_waypoint = None
+        self.main_waypoints = []
+        self.next_waypoint_idx = 1
 
     def get_current_pose_world(self):
         try:
@@ -66,7 +68,7 @@ class WaypointPlanner(DirectedGraph):
 
 
 def callback_waypoints(msg):
-    WP.add_waypoints([posestamped2np(pose) for pose in msg.poses])
+    WP.main_waypoints = [tuple(posestamped2np(pose)) for pose in msg.poses]
 
 def callback_obstacle_pos(msg):
     WP.obstacles_poses = [pose2np(pose) for pose in msg]
@@ -101,7 +103,7 @@ def planning_node():
         ) 
         
         if dist < WP.radius:
-            WP.update_obstacles(WP.obstacles_poses, INITIAL_OBSTACLE_CLOCKWISE)
+            WP.update_graph(WP.obstacles_poses, WP,main_waypoints[:WP.next_waypoint_idx+1], INITIAL_OBSTACLE_CLOCKWISE)
             WP.modify_path(WP.current_waypoint, WP.get_next_wpt)
             WP.current_waypoint = WP.next_waypoint
             WP.next_waypoint = WP.get_next_wpt(WP.current_waypoint)
@@ -109,6 +111,7 @@ def planning_node():
         if WP.next_waypoint in WP.main_waypoints:
             next_orientation = euler_to_quaternion(get_yaw(WP.current_waypoint[:2],
                                                     WP.next_waypoint[:2]))
+            WP.current_waypoint_idx+=1
 
         self.next_setpoint = create_posestamped(
             WP.next_waypoint,

@@ -87,12 +87,12 @@ class DirectedGraph:
         self.graph = {}
         self.waypoint_edges, self.obstacles = [], []
 
-    def update_obstacles(self, centers, types=None):
+    def update_graph(self, centers, waypoints, types=None):
         if types is None:
             types = [obs.clockwise for obs in self.obstacles]
         self.reset()
         
-        graph.add_waypoints(self.main_waypoints)
+        graph.add_waypoints(waypoints)
         for i in range(len(centers)):
             graph.add_obstacle(centers[i], OBSTACLE_RADIUS, types[i], num_points=NUM_OBSTACLE_POINTS, fos=FOS)
         return
@@ -147,15 +147,12 @@ class DirectedGraph:
             self.waypoint_edges.remove(edge)
 
         return
-        
 
     def add_waypoints(self, waypoints):
         """
         Adds major waypoints to the graph. To be called at the beginning of the task before
         adding pbstacles.
         """
-        waypoints = [tuple(pt) for pt in waypoints]
-        self.main_waypoints = waypoints
         for i in range(len(waypoints)-1):
             self.add_node(waypoints[i], next_wpt= waypoints[i+1])
         self.add_node(waypoints[-1])
