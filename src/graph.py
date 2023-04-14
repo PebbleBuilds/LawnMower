@@ -4,7 +4,7 @@ import matplotlib
 matplotlib.use('TkAgg')  
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.spatial import KDTree
+from kdtree import KDTree
 from constants import *
 
 def distance_point_line(obs, pt1, pt2):
@@ -247,13 +247,13 @@ class DirectedGraph:
 
 
 # Example
-# graph = DirectedGraph()
-# waypoints=[(1,1, 2), (25,45, 4), (40, 2, 6), (2,40, 3)]
-# obstacles = [(10,10), (60,60), (80,80), (90,90)]
-# graph.add_waypoints([np.array(pt) for pt in waypoints])
-# graph.update_obstacles(obstacles, INITIAL_OBSTACLE_CLOCKWISE)
+graph = DirectedGraph()
+waypoints=[(1,1, 2), (25,45, 4), (40, 2, 6), (2,40, 3)]
+obstacles = [(10,10), (60,60), (80,80), (90,90)]
+graph.add_waypoints(waypoints)
+graph.update_graph(obstacles, waypoints, INITIAL_OBSTACLE_CLOCKWISE)
 
-# graph.render()
-# graph.update_obstacles([(8,10), (25,35), (50,45), (30,10)])
-# graph.render()
+graph.render()
+graph.update_graph([(8,10), (25,35), (50,45), (30,10)], waypoints)
+graph.render()
 
