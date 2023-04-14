@@ -40,6 +40,7 @@ def update_point_cloud(msg):
     # Convert PointCloud2 message to numpy array using read_points
     POINT_CLOUD = np.array(list(read_points(msg, skip_nans=True, field_names=("x", "y", "z"))))
     if POINT_CLOUD.shape[0] == 0 or len(POINT_CLOUD.shape)!=2 or POINT_CLOUD.shape[1]!=3:
+        POINT_CLOUD=None
         return
     # filter NAN
     mask = np.logical_not(np.isnan(POINT_CLOUD).any(axis=1))
@@ -92,7 +93,8 @@ def locate_obstacle_in_world(closest_obstacle):
 
     # Transform the obstacle_pose coordinates from the point cloud frame to the world frame
     try:
-        tf_cloud_to_world = TF_BUFFER.lookup_transform(VICON_DUMMY_FRAME_ID, PC_HEADER.frame_id, rospy.Time(0), rospy.Duration(2.0))
+        # tf_cloud_to_world = TF_BUFFER.lookup_transform(VICON_DUMMY_FRAME_ID, PC_HEADER.frame_id, rospy.Time(0))
+        tf_cloud_to_world = TF_BUFFER.lookup_transform(VICON_DUMMY_FRAME_ID, PC_HEADER.frame_id, PC_HEADER.stamp)
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
         rospy.logwarn("Failed to get transform from vicon")
         return None
