@@ -9,22 +9,25 @@ KALMAN_PUB = None
 OBSTACLE_LOC = INITIAL_OBSTACLE_POSITIONS.copy()
 
 def detections_cb(msg):
-    print("detections_cb")
     global OBSTACLE_LOC
     detection = np.array([msg.point.x, msg.point.y])
     # DETERMINE QUADRANT
-    if detection[0] > 0 and detection[1] > 0:
+    if msg.point.x >= 0 and msg.point.y >= 0:
         quadrant = 0
-    elif detection[0] > 0 and detection[1] < 0:
+    elif msg.point.x >= 0 and msg.point.y < 0:
         quadrant = 1
-    elif detection[0] < 0 and detection[1] < 0:
+    elif msg.point.x < 0 and msg.point.y < 0:
         quadrant = 2
-    elif detection[0] > 0 and detection[1] < 0:
+    elif msg.point.x < 0 and msg.point.y >= 0:
         quadrant = 3
-    OBSTACLE_LOC[quadrant] = detection
-    tracked_poses = PoseArray()
-    tracked_poses.header.stamp = rospy.Time.now()
-    tracked_poses.header.frame_id = VICON_DUMMY_FRAME_ID
+    else:
+        quadrant = -1
+        return
+    if quadrant != -1:
+        OBSTACLE_LOC[quadrant] = detection
+        tracked_poses = PoseArray()
+        tracked_poses.header.stamp = rospy.Time.now()
+        tracked_poses.header.frame_id = VICON_DUMMY_FRAME_ID
     for i in range(NUM_OBSTACLES):
         pose = Pose()
         pose.position.x = OBSTACLE_LOC[i][0]

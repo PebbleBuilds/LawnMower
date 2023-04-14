@@ -37,7 +37,7 @@ def callback_abort(request):
 
 def callback_planner(msg):
     wf_waypoints = PoseArray()
-    wf_waypoints.poses = [msg.pose]
+    wf_waypoints.poses = [msg]
     WF.set_waypoints(wf_waypoints)
 
 # Main node
@@ -60,7 +60,7 @@ def comm_node():
     rospy.Service(LAND_TOPIC, Empty, callback_land)
     rospy.Service(ABORT_TOPIC, Empty, callback_abort)
     # subscribers
-    rospy.Subscriber(PLANNER, PoseArray, callback_setpoint)
+    rospy.Subscriber(PLANNER, PoseStamped, callback_planner)
     # publishers
     sp_pub = rospy.Publisher(MAVROS_SETPOINT_TOPIC, PoseStamped, queue_size=1)
     rospy.loginfo("Services, subscribers, publishers initialized")

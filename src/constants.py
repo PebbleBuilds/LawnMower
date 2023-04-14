@@ -52,11 +52,12 @@ FOS = 1
 NUM_OBSTACLE_POINTS = 8
 NUM_OBSTACLES = 4
 INITIAL_OBSTACLE_POSITIONS = np.array([
-    [0.0, 0.0],
-    [0.0, 0.0],
-    [0.0, 0.0],
-    [0.0, 0.0]
+    [3.0, 2.0],
+    [3.0, -2.0],
+    [-3.0, -2.0],
+    [-3.0, 2.0]
 ])
+# red is clockwise, true
 INITIAL_OBSTACLE_CLOCKWISE = [True, True, False, False]
 
 # arena boundary, anything outside detected should be ignored
