@@ -1,4 +1,5 @@
 import numpy as np
+import heapq
 
 class KDNode:
     def __init__(self, point, split_dim, left=None, right=None):
@@ -33,23 +34,26 @@ class KDTree:
 
         return KDNode(median_point, split_dim, left, right)
 
-    def _search_kdtree(self, node, point, depth=0):
+    def _search_kdtree(self, node, point,k,queue, depth=0):
         if node is None:
             return None
-
-        # check if the current node's point is the target point
-        if np.array_equal(node.point, point):
-            return node.point
+        dist = np.linalg.norm(node.point-point)
+        if len(queue) < k or dist < -queue[0][0]:
+            heapq.heappush(queue, (-dist, node.point))
+            if len(queue) > k:
+                heapq.heappop(queue)
 
         # choose the axis to search on (same as during construction)
         split_dim = node.split_dim
 
         if point[split_dim] < node.point[split_dim]:
             # search the left subtree if the target point is less than the current node's point
-            return self._search_kdtree(node.left, point, depth+1)
+            return self._search_kdtree(node.left, point, k, queue, depth+1)
         else:
             # search the right subtree otherwise
-            return self._search_kdtree(node.right, point, depth+1)
+            return self._search_kdtree(node.right, point, k, queue, depth+1)
 
-    def query(self, point):
-        return self._search_kdtree(self.root, point)
+    def query(self, point, k=1):
+        queue = []
+        self._search_kdtree(self.root, point, k, queue)
+        return [x[1] for x in sorted(queue, reverse=True)]
