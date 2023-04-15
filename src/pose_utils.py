@@ -2,7 +2,7 @@
 
 import numpy as np
 import tf2_geometry_msgs
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 import rospy
 from constants import *
 import math
@@ -52,7 +52,17 @@ def posestamped2np(posestamped, include_time=False):
 
 
 def pose2np(pose):
-    return np.array([pose.position.x, pose.position.y, pose.position.z])
+    return point2np(pose.position)
+
+def point2np(point):
+    return np.array([point.x, point.y, point.z])
+
+def np2pose(pose_np):
+    pose = Pose()
+    pose.position.x = pose_np[0]
+    pose.position.y = pose_np[1]
+    pose.position.z = pose_np[2]
+    return pose
 
 def orientation2np(posestamped):
     orientation = posestamped.pose.orientation

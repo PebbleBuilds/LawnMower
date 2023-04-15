@@ -34,7 +34,9 @@ def detections_cb(msg):
         print(msg.point.x, msg.point.y)
         return
     if quadrant != -1:
-        OBSTACLE_LOC[quadrant] = detection
+        # OBSTACLE_LOC[quadrant] = detection
+        # take average of current and previous
+        OBSTACLE_LOC[quadrant] = (OBSTACLE_LOC[quadrant] + detection) / 2
     tracked_poses = PoseArray()
     tracked_poses.header.stamp = rospy.Time.now()
     tracked_poses.header.frame_id = VICON_DUMMY_FRAME_ID
@@ -52,7 +54,7 @@ if __name__ == "__main__":
     # subscribers
     rospy.Subscriber(CLOSEST_OBSTACLE_TOPIC, PointStamped, detections_cb)
     # publishers
-    KALMAN_PUB = rospy.Publisher("/obstacles/tracked", PoseArray, queue_size=1)
+    KALMAN_PUB = rospy.Publisher(TRACKER_OUTPUT, PoseArray, queue_size=1)
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         KALMAN_PUB.publish(OUTPUT_MSG)

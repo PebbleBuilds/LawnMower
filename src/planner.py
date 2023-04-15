@@ -91,7 +91,7 @@ def planning_node():
 
 
     # publishers
-    wp_pub = rospy.Publisher(PLANNER, PoseStamped, queue_size=1)
+    wp_pub = rospy.Publisher(PLANNER_TOPIC, PoseStamped, queue_size=1)
 
     while not rospy.is_shutdown():
         if WP.current_waypoint is None: # If going to launch waypoint

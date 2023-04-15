@@ -53,7 +53,6 @@ class WaypointFollower:
 
         self.last_setpoint_world = self.origin_setpoint
 
-        self.start_time = None
 
     def set_waypoints(self, waypoints):
         #if self.waypoints_received:
@@ -94,7 +93,7 @@ class WaypointFollower:
             setpoint_world = self.origin_setpoint
         # convert pose to local frame
         self.last_setpoint_world = setpoint_world
-        setpoint_local = self.world2local(setpoint_world)
+        setpoint_local = self.posestamped2local(setpoint_world)
         return setpoint_local
 
     def get_current_pose_world(self):
@@ -113,9 +112,9 @@ class WaypointFollower:
             )
             return None
 
-    def world2local(self, pose):
+    def posestamped2local(self, pose_stamped):
         try:
-            pose_local = self.tf_buffer.transform(pose, LOCAL_ORIGIN_FRAME_ID, rospy.Duration(1))
+            pose_local = self.tf_buffer.transform(pose_stamped, LOCAL_ORIGIN_FRAME_ID, rospy.Duration(1))
             return pose_local
         except (
             tf2_ros.LookupException,
@@ -129,33 +128,7 @@ class WaypointFollower:
 
     def handle_test(self):
         # TODO reimplement dancing
-        # check distance to current waypoint
-        dist = np.linalg.norm(
-            posestamped2np(self.get_current_pose_world())
-            - pose2np(self.waypoints_world[self.global_waypoint_idx])
-        )
-        # if within radius, increment timer
-        if dist < self.radius and self.start_time is None:
-            rospy.loginfo("starting timer on waypoint {}".format(self.global_waypoint_idx))
-            self.start_time = rospy.get_time()
-        # if timer exceeds hold_time, increment waypoint
-        if (
-            self.start_time is not None
-            and rospy.get_time() - self.start_time > self.hold_time
-        ):
-            self.global_waypoint_idx += 1
-            rospy.loginfo(
-                "waypoint {} reached, indexing to next waypoint".format(
-                    self.global_waypoint_idx
-                )
-            )
-            # if waypoint index exceeds number of waypoints, reset to 0
-            if self.global_waypoint_idx >= len(self.waypoints_world):
-                self.global_waypoint_idx = 0
-                rospy.loginfo("Waypoints complete. Resetting to first waypoint.")
-            # reset timer
-            self.start_time = None
-        setpoint = self.waypoints_world[self.global_waypoint_idx]
+        setpoint = self.waypoints_world[0]
         # convert from Pose to PoseStamped
         setpoint = PoseStamped(
             pose=setpoint, header=Header(frame_id=VICON_DUMMY_FRAME_ID)

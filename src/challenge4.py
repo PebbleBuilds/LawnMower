@@ -2,7 +2,7 @@
 
 import numpy as np
 import rospy
-from geometry_msgs.msg import PoseArray, PoseStamped, TransformStamped
+from geometry_msgs.msg import PoseArray, PoseStamped, TransformStamped, Pose
 from std_srvs.srv import Empty, EmptyResponse
 
 from constants import *
@@ -60,7 +60,7 @@ def comm_node():
     rospy.Service(LAND_TOPIC, Empty, callback_land)
     rospy.Service(ABORT_TOPIC, Empty, callback_abort)
     # subscribers
-    rospy.Subscriber(PLANNER, PoseStamped, callback_planner)
+    rospy.Subscriber(PLANNER_TOPIC, Pose, callback_planner)
     # publishers
     sp_pub = rospy.Publisher(MAVROS_SETPOINT_TOPIC, PoseStamped, queue_size=1)
     rospy.loginfo("Services, subscribers, publishers initialized")

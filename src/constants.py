@@ -31,11 +31,12 @@ OBSTACLE_POS_TOPIC = "dummy_obs_pose"
 OBSTACLE_TYPE_TOPIC = "dummy_obs_type"
 
 # Publisher topics
-PLANNER = "next_waypoint"
+PLANNER_TOPIC = "next_waypoint"
 
 PC_TOPIC = "/camera/points2"
 POINT_CLOUD_TOPIC = "/camera/points2"
 CLOSEST_OBSTACLE_TOPIC = "/locate_closest_obstacle_node"
+TRACKER_OUTPUT = "/obstacles/tracked"
 
 # stereo camera constants
 H, W = 800, 848
