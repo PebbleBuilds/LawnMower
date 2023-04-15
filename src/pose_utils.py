@@ -92,3 +92,25 @@ def euler_to_quaternion(roll, pitch, yaw):
     z = sy * cp * cr - cy * sp * sr
 
     return [w, x, y, z]
+
+def quaternion_to_euler(q):
+    """
+    Converts a quaternion to Euler angles
+    :param q: Quaternion in the form [w, x, y, z]
+    :return: Euler angles in radians in the form [roll, pitch, yaw]
+    """
+    # Normalize the quaternion
+    q_norm = q / np.linalg.norm(q)
+
+    # Extract the quaternion components
+    w = q_norm[0]
+    x = q_norm[1]
+    y = q_norm[2]
+    z = q_norm[3]
+
+    # Calculate the Euler angles
+    roll = np.arctan2(2*(w*x + y*z), 1-2*(x**2 + y**2))
+    pitch = np.arcsin(2*(w*y - z*x))
+    yaw = np.arctan2(2*(w*z + x*y), 1-2*(y**2 + z**2))
+
+    return roll,pitch,yaw
