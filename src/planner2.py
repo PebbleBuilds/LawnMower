@@ -7,7 +7,7 @@ import copy
 from constants import *
 import numpy as np
 from pose_utils import *
-from tf.transformations import quaternion_from_euler
+from tf.transformations import quaternion_from_euler, euler_from_quaternion
 import tf2_geometry_msgs
 
 WAYPOINTS_POSES = None # PoseArray
@@ -19,13 +19,14 @@ class CoolPlanner():
     def __init__(self):
         self.current_sp = Pose()
         self.current_sp.position.z = 1
+        self.current_sp.orientation.w = 1
         self.next_waypoint_idx = 0
         self.tf_buffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
-        self.sp_radius = 0.05 # meters
-        self.yaw_tolerance = 0.1 # radians
+        self.sp_radius = 0.2 # meters
+        self.yaw_tolerance = 0.2 # radians
         self.hold_time = 2
-        self.drone_width = 0.2 # meters
+        self.drone_width = 1 # meters
         self.look_ahead = 1
         self.avoid_dist = 1 # metres
         self.start_time = None
@@ -36,12 +37,16 @@ class CoolPlanner():
         # get the next waypoint
         next_waypoint = self.get_next_waypoint()
         # calculate the angle
-        y = next_waypoint.y - sp.y
-        x = next_waypoint.x - sp.x
+        y = next_waypoint.position.y - sp.position.y
+        x = next_waypoint.position.x - sp.position.x
         theta = np.arctan2(y,x)
         # create a new posestamped
         sp_new = copy.deepcopy(sp)
-        sp_new.orientation = quaternion_from_euler(0,0,theta)
+        orientation = quaternion_from_euler(0,0,theta)
+        sp_new.orientation.x = orientation[0]
+        sp_new.orientation.y = orientation[1]
+        sp_new.orientation.z = orientation[2]
+        sp_new.orientation.w = orientation[3]
         return sp_new
 
     def posestamped_to_frame(self, posestamped, frame_id):
@@ -58,15 +63,15 @@ class CoolPlanner():
             )
             return self.posestamped
 
-    def avoid_obstacle(self, obstacle_posestamped):
+    def avoid_obstacle(self, obstacle_posestamped, current_posestamped):
         # check which quadrant the obstacle is in world frame
-        if obstacle_posestamped.pose.x > 0:
-            if obstacle_posestamped.pose.y > 0:
+        if obstacle_posestamped.pose.position.x > 0:
+            if obstacle_posestamped.pose.position.y > 0:
                 quadrant = 0
             else:
                 quadrant = 1
         else:
-            if obstacle_posestamped.pose.y > 0:
+            if obstacle_posestamped.pose.position.y > 0:
                 quadrant = 3
             else:
                 quadrant = 2
@@ -75,10 +80,13 @@ class CoolPlanner():
         obstacle_pose_d = self.posestamped_to_frame(obstacle_posestamped, DRONE_FRAME_ID)
         avoid_sp_d = copy.deepcopy(obstacle_pose_d)
         if left:
-            avoid_sp_d.pose.y = avoid_sp_d.pose.y + self.avoid_dist
+            avoid_sp_d.pose.position.y = avoid_sp_d.pose.position.y + self.avoid_dist
         else:
-            avoid_sp_d.pose.y = avoid_sp_d.pose.y - self.avoid_dist
-        return self.orient_sp(self.posestamped_to_frame(avoid_sp_d, VICON_DUMMY_FRAME_ID))
+            avoid_sp_d.pose.position.y = avoid_sp_d.pose.position.y - self.avoid_dist
+        sp = self.orient_sp(self.posestamped_to_frame(avoid_sp_d, VICON_DUMMY_FRAME_ID).pose)
+        sp.position.z = current_posestamped.pose.position.z
+        print(sp)
+        return sp
 
     def get_current_pose(self):
         try:
@@ -93,12 +101,18 @@ class CoolPlanner():
         return np.linalg.norm(pose2np(pose1) - pose2np(pose2))
 
     def get_yaw_diff(self, quaternion_msg1, quaternion_msg2):
-        return np.abs(quaternion_to_euler(quaternion_msg1)[2] - quaternion_to_euler(quaternion_msg2)[2])
+        # convert msg into list
+        quat1 = [quaternion_msg1.x, quaternion_msg1.y, quaternion_msg1.z, quaternion_msg1.w]
+        quat2 = [quaternion_msg2.x, quaternion_msg2.y, quaternion_msg2.z, quaternion_msg2.w]
+        return np.abs(euler_from_quaternion(quat1)[2] - euler_from_quaternion(quat2)[2])
 
     def check_collision(self, obstacle_drone_posestamped, next_waypoint_drone_posestamped):
+        print(obstacle_drone_posestamped)
+        print(next_waypoint_drone_posestamped)
         if obstacle_drone_posestamped.pose.position.x < 0:
             return False
         if obstacle_drone_posestamped.pose.position.x > next_waypoint_drone_posestamped.pose.position.x:
+            rospy.loginfo("obstacle is past next waypoint: {} > {}".format(obstacle_drone_posestamped.pose.position.x, next_waypoint_drone_posestamped.pose.position.x))
             return False
         # if next_waypoint is within self.drone_width 
         min_width_point = - self.drone_width / 2
@@ -117,22 +131,25 @@ class CoolPlanner():
         vec = vec / np.linalg.norm(vec)
         vec = vec * self.look_ahead
         sp = np2pose(pose2np(current_posestamped.pose) + vec)
+        sp.orientation.w = 1
         return self.orient_sp(sp)
 
     def get_current_sp(self):
         # MAIN LOOP
         # get the current pose.
-        current_pose = self.get_current_pose() # PoseStamped() or None
-        if current_pose is None:
+        current_posestamped = self.get_current_pose() # PoseStamped() or None
+        if current_posestamped is None:
             rospy.logwarn("Planner issue: No current pose")
             return self.current_sp
             
         # if we're not at the next setpoint yet, just return the current setpoint.
-        if self.get_dist(current_pose.pose, self.current_sp) >= self.sp_radius or self.get_yaw_diff(current_pose.pose.orientation, self.current_sp.orientation) >= self.yaw_tolerance:
+        if self.get_dist(current_posestamped.pose, self.current_sp) >= self.sp_radius:
+            # rospy.loginfo("Planner: Not at setpoint yet")
+            # rospy.loginfo("Planner: Dist: {}".format(self.get_dist(current_posestamped.pose, self.current_sp)))
+            return self.current_sp
+        if self.get_yaw_diff(current_posestamped.pose.orientation, self.current_sp.orientation) >= self.yaw_tolerance:
             # log dist and angle diff
-            rospy.loginfo("Planner: Not at setpoint yet")
-            rospy.loginfo("Planner: Dist: {}".format(self.get_dist(current_pose.pose, self.current_sp)))
-            rospy.loginfo("Planner: Angle: {}".format(self.get_yaw_diff(current_pose.pose.orientation, self.current_sp.orientation)))
+            # rospy.loginfo("Planner: Angle: {}".format(self.get_yaw_diff(current_posestamped.pose.orientation, self.current_sp.orientation)))
             return self.current_sp
 
         # if arrived at the setpoint, increment timer
@@ -140,25 +157,25 @@ class CoolPlanner():
         if self.start_time is None:
             self.start_time = rospy.Time.now()
         if rospy.Time.now() - self.start_time < rospy.Duration(self.hold_time):
+            rospy.loginfo("Planner: holding at setpoint")
             return self.current_sp
         
         # if we have been at the current setpoint for self.hold_time, reset timer and get next setpoint
         self.start_time = None
-        
+
         # check if arrived at the next global waypoint
-        if self.get_dist(current_pose.pose, self.get_next_waypoint()) < self.sp_radius:
+        if self.get_dist(current_posestamped.pose, self.get_next_waypoint()) < self.sp_radius:
+            rospy.loginfo("reached waypoint {}".format(self.next_waypoint_idx))
             self.next_waypoint_idx += 1
             self.next_waypoint_idx %= len(WAYPOINTS_POSES.poses)
-
-        # check if current orientation is correct. if not, keep trying to get to the oriented setpoint.
-        if self.get_yaw_diff(current_pose.pose.orientation, self.current_sp.orientation) > self.yaw_tolerance:
-            rospy.loginfo("Planner: Not at correct orientation yet")
-            return self.orient_sp(current_pose)
+            rospy.loginfo("turning to face next waypoint")
+            self.current_sp = self.orient_sp(current_posestamped.pose)
+            return self.current_sp
 
         # check if there's an obstacle. if so, avoid.
         if OBSTACLES is not None:
             # sort obstacles by distance to current pose
-            obstacles_sorted = sorted(OBSTACLES.poses, key=lambda x: self.get_dist(current_pose.pose, x))
+            obstacles_sorted = sorted(OBSTACLES.poses, key=lambda x: self.get_dist(current_posestamped.pose, x))
             # convert next waypoint to drone frame
             next_waypoint = PoseStamped()
             next_waypoint.pose = self.get_next_waypoint()
@@ -172,15 +189,19 @@ class CoolPlanner():
                 obstacle_drone_posestamped = self.posestamped_to_frame(obstacle_posestamped, DRONE_FRAME_ID)
                 if self.check_collision(obstacle_drone_posestamped, next_waypoint_drone_posestamped):
                     rospy.loginfo("Planner: Obstacle detected")
-                    return self.avoid_obstacle(obstacle_posestamped)
+                    self.current_sp = self.avoid_obstacle(obstacle_posestamped, current_posestamped)
+                    return self.current_sp
         # if no obstacle, move closer to next waypoint by 1 meter
         rospy.loginfo("Planner: No obstacle detected")
-        self.current_sp = self.get_next_setpoint()
+        self.current_sp = self.get_next_setpoint(current_posestamped)
         return self.current_sp
 
 def waypoints_cb(msg):
     global WAYPOINTS_POSES
-    WAYPOINTS_POSES = msg
+    if WAYPOINTS_POSES is None:
+        rospy.loginfo("Got waypoints")
+        rospy.loginfo(msg)
+        WAYPOINTS_POSES = msg
 
 def obstacles_cb(msg):
     global OBSTACLES
@@ -209,30 +230,3 @@ if __name__=="__main__":
 
 
 
-# From WF
-# # check distance to current waypoint
-# dist = np.linalg.norm(
-#     posestamped2np(self.get_current_pose_world())
-#     - pose2np(self.waypoints_world[self.global_waypoint_idx])
-# )
-# # if within radius, increment timer
-# if dist < self.radius and self.start_time is None:
-#     rospy.loginfo("starting timer on waypoint {}".format(self.global_waypoint_idx))
-#     self.start_time = rospy.get_time()
-# # if timer exceeds hold_time, increment waypoint
-# if (
-#     self.start_time is not None
-#     and rospy.get_time() - self.start_time > self.hold_time
-# ):
-#     self.global_waypoint_idx += 1
-#     rospy.loginfo(
-#         "waypoint {} reached, indexing to next waypoint".format(
-#             self.global_waypoint_idx
-#         )
-#     )
-#     # if waypoint index exceeds number of waypoints, reset to 0
-#     if self.global_waypoint_idx >= len(self.waypoints_world):
-#         self.global_waypoint_idx = 0
-#         rospy.loginfo("Waypoints complete. Resetting to first waypoint.")
-#     # reset timer
-#     self.start_time = None

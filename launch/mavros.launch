@@ -1,8 +1,8 @@
 <launch>
     <arg name="ns" default="/"/>
     <arg name="fcu_url" default="/dev/ttyTHS1:500000"/>
-    <!-- <arg name="gcs_url" default="udp://@10.42.0.130:14550" /> -->
-    <arg name="gcs_url" default="udp://@192.168.101.218:14550" />
+    <arg name="gcs_url" default="udp://@10.42.0.131:14550" />
+    <!-- <arg name="gcs_url" default="udp://@192.168.101.218:14550" /> -->
     <arg name="tgt_system" default="1" />
     <arg name="tgt_component" default="1" />
 

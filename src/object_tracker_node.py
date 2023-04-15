@@ -30,8 +30,8 @@ def detections_cb(msg):
         quadrant = 3
     else:
         quadrant = -1
-        print("invalid detection")
-        print(msg.point.x, msg.point.y)
+        # print("invalid detection")
+        # print(msg.point.x, msg.point.y)
         return
     if quadrant != -1:
         # OBSTACLE_LOC[quadrant] = detection

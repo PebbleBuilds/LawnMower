@@ -15,7 +15,7 @@ from std_msgs.msg import Header
 class WaypointFollower:
     def __init__(
         self,
-        radius=0.05,
+        radius=0.1,
         hold_time=2,
         launch_height=1,
         waypoints=None,
@@ -57,7 +57,7 @@ class WaypointFollower:
     def set_waypoints(self, waypoints):
         #if self.waypoints_received:
         #    return
-        print("Setting waypoints: \n", waypoints)
+        # print("Setting waypoints: \n", waypoints)
         # convert from vicon_world frame to vicon_inertial frame
         self.waypoints_world = waypoints
         self.waypoints_received = True
@@ -128,7 +128,7 @@ class WaypointFollower:
 
     def handle_test(self):
         # TODO reimplement dancing
-        setpoint = self.waypoints_world[0]
+        setpoint = self.waypoints_world.poses[0]
         # convert from Pose to PoseStamped
         setpoint = PoseStamped(
             pose=setpoint, header=Header(frame_id=VICON_DUMMY_FRAME_ID)

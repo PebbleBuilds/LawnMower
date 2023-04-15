@@ -22,7 +22,7 @@ if __name__ == "__main__":
     rospy.Subscriber(MAVROS_POSE_TOPIC, PoseStamped, update_transform)
 
     br = tf2_ros.TransformBroadcaster()
-    rate = rospy.Rate(100.0)
+    rate = rospy.Rate(25.0)
 
     drone2local_tf = TransformStamped()
     drone2local_tf.header.frame_id =  BASE_LINK_FRAME_ID

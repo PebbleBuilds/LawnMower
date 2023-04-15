@@ -82,47 +82,47 @@ def get_yaw(point1, point2):
     
     return yaw
 
-def euler_to_quaternion(roll, pitch, yaw):
-    """
-    Converts Euler angles to quaternion
-    :param roll: Roll angle in radians
-    :param pitch: Pitch angle in radians
-    :param yaw: Yaw angle in radians
-    :return: Quaternion tuple (w, x, y, z)
-    """
-    cy = np.cos(yaw * 0.5)
-    sy = np.sin(yaw * 0.5)
-    cp = np.cos(pitch * 0.5)
-    sp = np.sin(pitch * 0.5)
-    cr = np.cos(roll * 0.5)
-    sr = np.sin(roll * 0.5)
+# def euler_to_quaternion(roll, pitch, yaw):
+#     """
+#     Converts Euler angles to quaternion
+#     :param roll: Roll angle in radians
+#     :param pitch: Pitch angle in radians
+#     :param yaw: Yaw angle in radians
+#     :return: Quaternion tuple (w, x, y, z)
+#     """
+#     cy = np.cos(yaw * 0.5)
+#     sy = np.sin(yaw * 0.5)
+#     cp = np.cos(pitch * 0.5)
+#     sp = np.sin(pitch * 0.5)
+#     cr = np.cos(roll * 0.5)
+#     sr = np.sin(roll * 0.5)
 
-    w = cy * cp * cr + sy * sp * sr
-    x = cy * cp * sr - sy * sp * cr
-    y = sy * cp * sr + cy * sp * cr
-    z = sy * cp * cr - cy * sp * sr
+#     w = cy * cp * cr + sy * sp * sr
+#     x = cy * cp * sr - sy * sp * cr
+#     y = sy * cp * sr + cy * sp * cr
+#     z = sy * cp * cr - cy * sp * sr
 
-    return [w, x, y, z]
+#     return [w, x, y, z]
 
-def quaternion_to_euler(quat):
-    """
-    Convert a quaternion into euler angles (roll, pitch, yaw)
-    roll is rotation around x in radians (counterclockwise)
-    pitch is rotation around y in radians (counterclockwise)
-    yaw is rotation around z in radians (counterclockwise)
-    """
-    x,y,z,w = list(quat)
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + y * y)
-    roll_x = math.atan2(t0, t1)
+# def quaternion_to_euler(quat):
+#     """
+#     Convert a quaternion into euler angles (roll, pitch, yaw)
+#     roll is rotation around x in radians (counterclockwise)
+#     pitch is rotation around y in radians (counterclockwise)
+#     yaw is rotation around z in radians (counterclockwise)
+#     """
+#     x,y,z,w = list(quat)
+#     t0 = +2.0 * (w * x + y * z)
+#     t1 = +1.0 - 2.0 * (x * x + y * y)
+#     roll_x = math.atan2(t0, t1)
     
-    t2 = +2.0 * (w * y - z * x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    pitch_y = math.asin(t2)
+#     t2 = +2.0 * (w * y - z * x)
+#     t2 = +1.0 if t2 > +1.0 else t2
+#     t2 = -1.0 if t2 < -1.0 else t2
+#     pitch_y = math.asin(t2)
     
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    yaw_z = math.atan2(t3, t4)
+#     t3 = +2.0 * (w * z + x * y)
+#     t4 = +1.0 - 2.0 * (y * y + z * z)
+#     yaw_z = math.atan2(t3, t4)
     
-    return roll_x, pitch_y, yaw_z # in radians
+#     return roll_x, pitch_y, yaw_z # in radians

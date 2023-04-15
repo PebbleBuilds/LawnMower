@@ -16,8 +16,8 @@ def pub_node():
         pose_stamped.position.z = 1
         pose_stamped.orientation.w = 1
     
-    pose_array.poses[1].position.x = 4
-    pose_array.poses[1].position.y = 4
+    pose_array.poses[1].position.x = 1.5
+    pose_array.poses[1].position.y = 1.5
 
     pose_array.poses[2].position.x = -4
     pose_array.poses[2].position.y = -4
