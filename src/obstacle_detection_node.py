@@ -57,6 +57,8 @@ def process_point_cloud():
     """
     # Step 1: Reproject disparity map to 3D point cloud
     point_cloud = POINT_CLOUD.copy()
+    if PC_HEADER is None:
+        return
 
     # Step 2: Filter out points with depth value less than and greater than thresholds
     try:
@@ -96,7 +98,7 @@ def locate_obstacle_in_world(closest_obstacle):
         # tf_cloud_to_world = TF_BUFFER.lookup_transform(VICON_DUMMY_FRAME_ID, PC_HEADER.frame_id, rospy.Time(0))
         tf_cloud_to_world = TF_BUFFER.lookup_transform(VICON_DUMMY_FRAME_ID, PC_HEADER.frame_id, PC_HEADER.stamp)
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-        rospy.logwarn("Failed to get transform from vicon")
+        rospy.logwarn("OD Failed to get transform from vicon")
         return None
     obstacle_point = tf2_geometry_msgs.do_transform_point(obstacle_point, tf_cloud_to_world)
 
