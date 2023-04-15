@@ -53,6 +53,12 @@ def posestamped2np(posestamped, include_time=False):
 def pose2np(pose):
     return np.array([pose.position.x, pose.position.y, pose.position.z])
 
+def orientation2np(posestamped):
+    orientation = posestamped.orientation
+    return np.array([orientation.x,
+                     orientation.y,
+                     orientation.z,
+                     orientation.w])
 
 def np2posestamped(pose):
     return create_posestamped(pose)
