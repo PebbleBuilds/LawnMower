@@ -1,6 +1,6 @@
 <launch>
-    <arg name="gcs_url" default="udp://@10.42.0.131:14550" />
-    <!-- <arg name="gcs_url" default="udp://@192.168.137.1:14550" /> -->
+    <!-- <arg name="gcs_url" default="udp://@10.42.0.132:14550" /> -->
+    <arg name="gcs_url" default="udp://@192.168.137.1:14550" />
 
     <!-- Launch MAVROS -->
     <include file="$(find LawnMower)/launch/mavros.launch">
@@ -9,11 +9,12 @@
     <!-- Include extrinsics -->
     <include file="$(find LawnMower)/launch/extrinsics.launch" />
 
-    <include file="$(find LawnMower)/launch/stereo.launch" />
-    <node pkg="LawnMower" type="obstacle_detection_node.py" name="od_node" output="screen" />
+    <!-- <include file="$(find LawnMower)/launch/stereo.launch" /> -->
+    <!-- <node pkg="LawnMower" type="obstacle_detection_node.py" name="od_node" output="screen" /> -->
+    
     <node pkg="LawnMower" type="object_tracker_node.py" name="ot_node" output="screen" />
     <node pkg="LawnMower" type="planner2.py" name="planner_node" output="screen" />
-    <!-- Launch challenge -->
+
     <node pkg="LawnMower" type="challenge4.py" name="challenge4" output="screen" />
 
 </launch>

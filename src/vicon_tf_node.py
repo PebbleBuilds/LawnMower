@@ -26,7 +26,8 @@ if __name__ == "__main__":
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
-        ):
+        ) as e:
+            print(e)
             rospy.logwarn("vicon tf Failed to get transform from vicon")
         if last_trans is not None:
             # latch on to last known transform

@@ -11,6 +11,7 @@ ABORT = 3
 # frame_ids
 VICON_ORIGIN_FRAME_ID = "vicon/world"
 VICON_DUMMY_FRAME_ID = "vicon/dummy"
+# VICON_DUMMY_FRAME_ID = "vicon/world"
 DRONE_FRAME_ID = "vicon/ROB498_Drone/ROB498_Drone"
 BASE_LINK_FRAME_ID = "base_link"
 LOCAL_ORIGIN_FRAME_ID = "map"
@@ -47,16 +48,16 @@ BASELINE = -18.2928466796875/286.1825866699219 # 64 mm baseline
 DROP_FRAMES = 3
 
 # obstacle parameters
-OBSTACLE_RADIUS = 1 # meters
+OBSTACLE_RADIUS = 1.0 # meters
 OBSTACLE_HEIGHT = 2.0 # meters
 FOS = 1
 NUM_OBSTACLE_POINTS = 8
 NUM_OBSTACLES = 4
 INITIAL_OBSTACLE_POSITIONS = np.array([
-    [3.0, 2.0],
-    [3.0, -2.0],
-    [-3.0, -2.0],
-    [-3.0, 2.0]
+    [1.5, 1.5],
+    [1.5, -1.5],
+    [-1.5, -1.5],
+    [-1.5, 1.5]
 ])
 # red is clockwise, true
 INITIAL_OBSTACLE_CLOCKWISE = [True, True, False, False]

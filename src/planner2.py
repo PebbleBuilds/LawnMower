@@ -39,10 +39,12 @@ class CoolPlanner():
         # calculate the angle
         y = next_waypoint.position.y - sp.position.y
         x = next_waypoint.position.x - sp.position.x
+	    # flip the sign because we saw it turning backwards
         theta = np.arctan2(y,x)
+        print("desired theta", theta)
         # create a new posestamped
         sp_new = copy.deepcopy(sp)
-        orientation = quaternion_from_euler(0,0,theta)
+        orientation = quaternion_from_euler(0.0,0.0,theta)
         sp_new.orientation.x = orientation[0]
         sp_new.orientation.y = orientation[1]
         sp_new.orientation.z = orientation[2]
@@ -57,11 +59,12 @@ class CoolPlanner():
             tf2_ros.LookupException,
             tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException,
-        ):
+        ) as e:
+            print(e)
             rospy.loginfo(
                 "Waiting for transform from vicon to local origin. Returning given posestamped."
             )
-            return self.posestamped
+            return None
 
     def avoid_obstacle(self, obstacle_posestamped, current_posestamped):
         # check which quadrant the obstacle is in world frame
@@ -78,14 +81,19 @@ class CoolPlanner():
         left = OBSTACLE_CLOCKWISE[quadrant]
         # convert obstacle to drone frame
         obstacle_pose_d = self.posestamped_to_frame(obstacle_posestamped, DRONE_FRAME_ID)
+        if obstacle_pose_d is None:
+            return None
         avoid_sp_d = copy.deepcopy(obstacle_pose_d)
         if left:
             avoid_sp_d.pose.position.y = avoid_sp_d.pose.position.y + self.avoid_dist
         else:
             avoid_sp_d.pose.position.y = avoid_sp_d.pose.position.y - self.avoid_dist
-        sp = self.orient_sp(self.posestamped_to_frame(avoid_sp_d, VICON_DUMMY_FRAME_ID).pose)
+        sp = self.posestamped_to_frame(avoid_sp_d, VICON_DUMMY_FRAME_ID)
+        if sp is None:
+            return None
+        sp =  self.orient_sp(sp.pose)
         sp.position.z = current_posestamped.pose.position.z
-        print(sp)
+        print("drone moving to", sp)
         return sp
 
     def get_current_pose(self):
@@ -107,8 +115,7 @@ class CoolPlanner():
         return np.abs(euler_from_quaternion(quat1)[2] - euler_from_quaternion(quat2)[2])
 
     def check_collision(self, obstacle_drone_posestamped, next_waypoint_drone_posestamped):
-        print(obstacle_drone_posestamped)
-        print(next_waypoint_drone_posestamped)
+        print("obstacle detected at", obstacle_drone_posestamped)
         if obstacle_drone_posestamped.pose.position.x < 0:
             return False
         if obstacle_drone_posestamped.pose.position.x > next_waypoint_drone_posestamped.pose.position.x:
@@ -141,7 +148,7 @@ class CoolPlanner():
         if current_posestamped is None:
             rospy.logwarn("Planner issue: No current pose")
             return self.current_sp
-            
+        current_stamp = current_posestamped.header.stamp
         # if we're not at the next setpoint yet, just return the current setpoint.
         if self.get_dist(current_posestamped.pose, self.current_sp) >= self.sp_radius:
             # rospy.loginfo("Planner: Not at setpoint yet")
@@ -157,9 +164,9 @@ class CoolPlanner():
         if self.start_time is None:
             self.start_time = rospy.Time.now()
         if rospy.Time.now() - self.start_time < rospy.Duration(self.hold_time):
-            rospy.loginfo("Planner: holding at setpoint")
+            rospy.loginfo("Planner: holding at setpoint, diff of {}".format(rospy.Time.now() - self.start_time))
             return self.current_sp
-        
+
         # if we have been at the current setpoint for self.hold_time, reset timer and get next setpoint
         self.start_time = None
 
@@ -180,17 +187,26 @@ class CoolPlanner():
             next_waypoint = PoseStamped()
             next_waypoint.pose = self.get_next_waypoint()
             next_waypoint.header = WAYPOINTS_POSES.header
+            next_waypoint.header.stamp = current_stamp
             next_waypoint_drone_posestamped = self.posestamped_to_frame(next_waypoint, DRONE_FRAME_ID)
+            if next_waypoint_drone_posestamped:
+                return self.current_sp
             for obstacle in obstacles_sorted:
                 obstacle_posestamped = PoseStamped()
                 obstacle_posestamped.pose = obstacle
                 obstacle_posestamped.header = OBSTACLES.header
+                obstacle_posestamped.header.stamp = current_stamp
                 # check if obstacle is in front of the drone and within the drone width and closer than the next waypoint
                 obstacle_drone_posestamped = self.posestamped_to_frame(obstacle_posestamped, DRONE_FRAME_ID)
+                if obstacle_drone_posestamped is None:
+                    return self.current_sp
                 if self.check_collision(obstacle_drone_posestamped, next_waypoint_drone_posestamped):
                     rospy.loginfo("Planner: Obstacle detected")
-                    self.current_sp = self.avoid_obstacle(obstacle_posestamped, current_posestamped)
+                    current_sp = self.avoid_obstacle(obstacle_posestamped, current_posestamped)
+                    if current_sp is not None:
+                        self.current_sp = current_sp
                     return self.current_sp
+
         # if no obstacle, move closer to next waypoint by 1 meter
         rospy.loginfo("Planner: No obstacle detected")
         self.current_sp = self.get_next_setpoint(current_posestamped)
@@ -215,7 +231,7 @@ if __name__=="__main__":
     # publishers
     SP_PUB = rospy.Publisher(PLANNER_TOPIC, Pose, queue_size=1)
     
-    planner = CoolPlanner()
+    PLANNER = CoolPlanner()
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         if WAYPOINTS_POSES is None:
@@ -224,7 +240,7 @@ if __name__=="__main__":
         if OBSTACLES is None:
             rospy.logwarn("No obstacles")
             continue
-        current_sp = planner.get_current_sp()
+        current_sp = PLANNER.get_current_sp()
         SP_PUB.publish(current_sp)
         rate.sleep()
 
