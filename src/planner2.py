@@ -25,10 +25,10 @@ class CoolPlanner():
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.sp_radius = 0.2 # meters
         self.yaw_tolerance = 0.2 # radians
-        self.hold_time = 2
-        self.drone_width = 1 # meters
-        self.look_ahead = 1
-        self.avoid_dist = 1 # metres
+        self.hold_time = 2.0
+        self.drone_width = 1.0 # meters
+        self.look_ahead = 1.0
+        self.avoid_dist = 0.5 # metres
         self.start_time = None
 
 
