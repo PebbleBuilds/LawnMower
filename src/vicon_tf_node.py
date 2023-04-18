@@ -11,7 +11,7 @@ if __name__ == "__main__":
     tf_buffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tf_buffer)
     br = tf2_ros.TransformBroadcaster()
-    rate = rospy.Rate(25)
+    rate = rospy.Rate(20)
     # initialize to identity
     last_trans = None
     while not rospy.is_shutdown():

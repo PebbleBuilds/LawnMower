@@ -33,7 +33,7 @@ class CoolPlanner():
 
 
     def orient_sp(self, sp):
-        # sp is a posestamped
+        # sp is a pose
         # get the next waypoint
         next_waypoint = self.get_next_waypoint()
         # calculate the angle
@@ -41,7 +41,6 @@ class CoolPlanner():
         x = next_waypoint.position.x - sp.position.x
 	    # flip the sign because we saw it turning backwards
         theta = np.arctan2(y,x)
-        print("desired theta", theta)
         # create a new posestamped
         sp_new = copy.deepcopy(sp)
         orientation = quaternion_from_euler(0.0,0.0,theta)
@@ -82,6 +81,7 @@ class CoolPlanner():
         # convert obstacle to drone frame
         obstacle_pose_d = self.posestamped_to_frame(obstacle_posestamped, DRONE_FRAME_ID)
         if obstacle_pose_d is None:
+            rospy.logwarn("obstacle pose is None")
             return None
         avoid_sp_d = copy.deepcopy(obstacle_pose_d)
         if left:
@@ -90,10 +90,10 @@ class CoolPlanner():
             avoid_sp_d.pose.position.y = avoid_sp_d.pose.position.y - self.avoid_dist
         sp = self.posestamped_to_frame(avoid_sp_d, VICON_DUMMY_FRAME_ID)
         if sp is None:
+            rospy.logwarn("avoid sp is None")
             return None
-        sp =  self.orient_sp(sp.pose)
+        sp =  self.orient_sp(sp.pose) # Pose()
         sp.position.z = current_posestamped.pose.position.z
-        print("drone moving to", sp)
         return sp
 
     def get_current_pose(self):
@@ -115,11 +115,11 @@ class CoolPlanner():
         return np.abs(euler_from_quaternion(quat1)[2] - euler_from_quaternion(quat2)[2])
 
     def check_collision(self, obstacle_drone_posestamped, next_waypoint_drone_posestamped):
-        print("obstacle detected at", obstacle_drone_posestamped)
+        # print("checking collision with obstacle at", obstacle_drone_posestamped)
         if obstacle_drone_posestamped.pose.position.x < 0:
             return False
         if obstacle_drone_posestamped.pose.position.x > next_waypoint_drone_posestamped.pose.position.x:
-            rospy.loginfo("obstacle is past next waypoint: {} > {}".format(obstacle_drone_posestamped.pose.position.x, next_waypoint_drone_posestamped.pose.position.x))
+            # rospy.loginfo("obstacle is past next waypoint: {} > {}".format(obstacle_drone_posestamped.pose.position.x, next_waypoint_drone_posestamped.pose.position.x))
             return False
         # if next_waypoint is within self.drone_width 
         min_width_point = - self.drone_width / 2
@@ -131,7 +131,12 @@ class CoolPlanner():
 
     def get_next_setpoint(self, current_posestamped):
         if self.get_dist(current_posestamped.pose, self.get_next_waypoint()) < self.look_ahead:
-            return self.orient_sp(self.get_next_waypoint())
+            orientation = self.orient_sp(current_posestamped.pose).orientation
+            sp = self.get_next_waypoint()
+            sp.orientation = orientation
+            rospy.loginfo("continue directly to next waypoint")
+            rospy.loginfo(sp)
+            return sp
         # compute a setpoint that is self.look_ahead meters away from the current pose.
         # this is the setpoint that we will try to get to.
         vec = pose2np(self.get_next_waypoint()) - pose2np(current_posestamped.pose)
@@ -139,6 +144,7 @@ class CoolPlanner():
         vec = vec * self.look_ahead
         sp = np2pose(pose2np(current_posestamped.pose) + vec)
         sp.orientation.w = 1
+        rospy.loginfo("setpoint is look ahead")
         return self.orient_sp(sp)
 
     def get_current_sp(self):
@@ -153,10 +159,12 @@ class CoolPlanner():
         if self.get_dist(current_posestamped.pose, self.current_sp) >= self.sp_radius:
             # rospy.loginfo("Planner: Not at setpoint yet")
             # rospy.loginfo("Planner: Dist: {}".format(self.get_dist(current_posestamped.pose, self.current_sp)))
+            self.current_sp = self.orient_sp(self.current_sp)
             return self.current_sp
         if self.get_yaw_diff(current_posestamped.pose.orientation, self.current_sp.orientation) >= self.yaw_tolerance:
             # log dist and angle diff
             # rospy.loginfo("Planner: Angle: {}".format(self.get_yaw_diff(current_posestamped.pose.orientation, self.current_sp.orientation)))
+            self.current_sp = self.orient_sp(self.current_sp)
             return self.current_sp
 
         # if arrived at the setpoint, increment timer
@@ -164,11 +172,12 @@ class CoolPlanner():
         if self.start_time is None:
             self.start_time = rospy.Time.now()
         if rospy.Time.now() - self.start_time < rospy.Duration(self.hold_time):
-            rospy.loginfo("Planner: holding at setpoint, diff of {}".format(rospy.Time.now() - self.start_time))
+            rospy.loginfo("Planner: holding at setpoint, diff of {}".format(rospy.Time.now().to_sec() - self.start_time.to_sec()))
             return self.current_sp
 
         # if we have been at the current setpoint for self.hold_time, reset timer and get next setpoint
         self.start_time = None
+        rospy.loginfo("Planner: Arrived at setpoint, getting next setpoint")
 
         # check if arrived at the next global waypoint
         if self.get_dist(current_posestamped.pose, self.get_next_waypoint()) < self.sp_radius:
@@ -189,7 +198,8 @@ class CoolPlanner():
             next_waypoint.header = WAYPOINTS_POSES.header
             next_waypoint.header.stamp = current_stamp
             next_waypoint_drone_posestamped = self.posestamped_to_frame(next_waypoint, DRONE_FRAME_ID)
-            if next_waypoint_drone_posestamped:
+            if next_waypoint_drone_posestamped is None:
+                rospy.logwarn("Planner issue: next_waypoint_drone_posestamped is None")
                 return self.current_sp
             for obstacle in obstacles_sorted:
                 obstacle_posestamped = PoseStamped()
@@ -199,17 +209,21 @@ class CoolPlanner():
                 # check if obstacle is in front of the drone and within the drone width and closer than the next waypoint
                 obstacle_drone_posestamped = self.posestamped_to_frame(obstacle_posestamped, DRONE_FRAME_ID)
                 if obstacle_drone_posestamped is None:
+                    rospy.logwarn("Planner issue: obstacle_drone_posestamped is None")
                     return self.current_sp
                 if self.check_collision(obstacle_drone_posestamped, next_waypoint_drone_posestamped):
-                    rospy.loginfo("Planner: Obstacle detected")
+                    rospy.loginfo("Planner: Obstacle detected at {}".format(obstacle.position))
                     current_sp = self.avoid_obstacle(obstacle_posestamped, current_posestamped)
                     if current_sp is not None:
                         self.current_sp = current_sp
+                    else:
+                        rospy.logwarn("Planner issue: current_sp is None")
                     return self.current_sp
 
         # if no obstacle, move closer to next waypoint by 1 meter
         rospy.loginfo("Planner: No obstacle detected")
         self.current_sp = self.get_next_setpoint(current_posestamped)
+        rospy.loginfo(self.current_sp)
         return self.current_sp
 
 def waypoints_cb(msg):
@@ -243,6 +257,3 @@ if __name__=="__main__":
         current_sp = PLANNER.get_current_sp()
         SP_PUB.publish(current_sp)
         rate.sleep()
-
-
-

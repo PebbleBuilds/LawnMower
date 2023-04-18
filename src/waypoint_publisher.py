@@ -15,12 +15,18 @@ def pub_node():
     for pose_stamped in pose_array.poses:
         pose_stamped.position.z = 1
         pose_stamped.orientation.w = 1
-    
-    pose_array.poses[1].position.x = 1.5
-    pose_array.poses[1].position.y = 1.5
 
-    pose_array.poses[2].position.x = -4
-    pose_array.poses[2].position.y = -4
+    pose_array.poses[0].position.x = -1
+    pose_array.poses[0].position.y = 0
+
+    pose_array.poses[1].position.x = -2
+    pose_array.poses[1].position.y = 0
+
+    pose_array.poses[2].position.x = -2
+    pose_array.poses[2].position.y = 1.5
+
+    pose_array.poses[3].position.x = 2
+    pose_array.poses[3].position.y = 1.5
     
     while not rospy.is_shutdown():
         pub.publish(pose_array)
