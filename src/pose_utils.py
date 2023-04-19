@@ -5,7 +5,7 @@ import tf2_geometry_msgs
 from geometry_msgs.msg import PoseStamped
 import rospy
 from constants import *
-
+import math
 
 def create_posestamped(
     pose_xyz=[0, 0, 0], orientation=[0, 0, 0, 1], frame_id=VICON_DUMMY_FRAME_ID
@@ -29,6 +29,7 @@ def create_posestamped(
 
 def tfstamped2posestamped(tfstamped):
     posestamped = PoseStamped()
+    posestamped.pose.orientation.w = 1
     posestamped = tf2_geometry_msgs.do_transform_pose(posestamped, tfstamped)
     return posestamped
 
@@ -53,6 +54,12 @@ def posestamped2np(posestamped, include_time=False):
 def pose2np(pose):
     return np.array([pose.position.x, pose.position.y, pose.position.z])
 
+def orientation2np(posestamped):
+    orientation = posestamped.pose.orientation
+    return np.array([orientation.x,
+                     orientation.y,
+                     orientation.z,
+                     orientation.w])
 
 def np2posestamped(pose):
     return create_posestamped(pose)
@@ -87,24 +94,25 @@ def euler_to_quaternion(roll, pitch, yaw):
 
     return [w, x, y, z]
 
-def quaternion_to_euler(q):
+def quaternion_to_euler(quat):
     """
-    Converts a quaternion to Euler angles
-    :param q: Quaternion in the form [w, x, y, z]
-    :return: Euler angles in radians in the form [roll, pitch, yaw]
+    Convert a quaternion into euler angles (roll, pitch, yaw)
+    roll is rotation around x in radians (counterclockwise)
+    pitch is rotation around y in radians (counterclockwise)
+    yaw is rotation around z in radians (counterclockwise)
     """
-    # Normalize the quaternion
-    q_norm = q / np.linalg.norm(q)
-
-    # Extract the quaternion components
-    w = q_norm[0]
-    x = q_norm[1]
-    y = q_norm[2]
-    z = q_norm[3]
-
-    # Calculate the Euler angles
-    roll = np.arctan2(2*(w*x + y*z), 1-2*(x**2 + y**2))
-    pitch = np.arcsin(2*(w*y - z*x))
-    yaw = np.arctan2(2*(w*z + x*y), 1-2*(y**2 + z**2))
-
-    return roll,pitch,yaw
+    x,y,z,w = list(quat)
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + y * y)
+    roll_x = math.atan2(t0, t1)
+    
+    t2 = +2.0 * (w * y - z * x)
+    t2 = +1.0 if t2 > +1.0 else t2
+    t2 = -1.0 if t2 < -1.0 else t2
+    pitch_y = math.asin(t2)
+    
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (y * y + z * z)
+    yaw_z = math.atan2(t3, t4)
+    
+    return roll_x, pitch_y, yaw_z # in radians
