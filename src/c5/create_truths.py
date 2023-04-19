@@ -4,7 +4,7 @@ import numpy as np
 def isolate(img):
     # Define threshold for black color
     black_threshold = 30
-    padding = 10
+    padding = 0
 
     # Initialize list to store coordinates of black pixels
     black_pixels = []
@@ -29,9 +29,9 @@ def isolate(img):
 
     return img[x_min-padding:x_max+padding, y_min-padding:y_max+padding]
 
-image = cv2.imread('alien_letters.png')
+image = cv2.imread('characters.png')
 
-chunks = np.array_split(image, 4, axis=1)
+chunks = np.array_split(image, 6, axis=1)
 
 for i in range(len(chunks)):
-    cv2.imwrite(f'test_{i+1}.png', isolate(chunks[i]))
+    cv2.imwrite(f'{i+1}.png', isolate(chunks[i]))
