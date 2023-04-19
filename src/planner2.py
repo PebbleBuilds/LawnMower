@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from geometry_msgs.msg import Pose, PoseArray, PointStamped
+from geometry_msgs.msg import Pose, PoseArray, PointStamped, Quaternion
 import tf2_ros
 import copy
 from constants import *
@@ -24,31 +24,30 @@ class CoolPlanner():
         self.tf_buffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.sp_radius = 0.2 # meters
-        self.yaw_tolerance = 0.2 # radians
+        self.yaw_tolerance = 0.4 # radians
         self.hold_time = 2.0
-        self.drone_width = 1.0 # meters
+        self.drone_radius = 0.5 # meters
         self.look_ahead = 1.0
         self.avoid_dist = 0.5 # metres
         self.start_time = None
 
 
-    def orient_sp(self, sp):
-        # sp is a pose
+    def orient_sp(self, curr_pose):
         # get the next waypoint
         next_waypoint = self.get_next_waypoint()
         # calculate the angle
-        y = next_waypoint.position.y - sp.position.y
-        x = next_waypoint.position.x - sp.position.x
+        y = next_waypoint.position.y - curr_pose.position.y
+        x = next_waypoint.position.x - curr_pose.position.x
 	    # flip the sign because we saw it turning backwards
         theta = np.arctan2(y,x)
         # create a new posestamped
-        sp_new = copy.deepcopy(sp)
         orientation = quaternion_from_euler(0.0,0.0,theta)
-        sp_new.orientation.x = orientation[0]
-        sp_new.orientation.y = orientation[1]
-        sp_new.orientation.z = orientation[2]
-        sp_new.orientation.w = orientation[3]
-        return sp_new
+        new_quat = Quaternion(
+            x=orientation[0], 
+            y=orientation[1], 
+            z=orientation[2], 
+            w=orientation[3])
+        return new_quat
 
     def posestamped_to_frame(self, posestamped, frame_id):
         try:
@@ -92,8 +91,10 @@ class CoolPlanner():
         if sp is None:
             rospy.logwarn("avoid sp is None")
             return None
-        sp =  self.orient_sp(sp.pose) # Pose()
+        sp = sp.pose
+        orientation =  self.orient_sp(sp)
         sp.position.z = current_posestamped.pose.position.z
+        sp.orientation = orientation
         return sp
 
     def get_current_pose(self):
@@ -116,14 +117,14 @@ class CoolPlanner():
 
     def check_collision(self, obstacle_drone_posestamped, next_waypoint_drone_posestamped):
         # print("checking collision with obstacle at", obstacle_drone_posestamped)
-        if obstacle_drone_posestamped.pose.position.x < 0:
+        if obstacle_drone_posestamped.pose.position.x < 0.25:
             return False
         if obstacle_drone_posestamped.pose.position.x > next_waypoint_drone_posestamped.pose.position.x:
             # rospy.loginfo("obstacle is past next waypoint: {} > {}".format(obstacle_drone_posestamped.pose.position.x, next_waypoint_drone_posestamped.pose.position.x))
             return False
         # if next_waypoint is within self.drone_width 
-        min_width_point = - self.drone_width / 2
-        max_width_point = self.drone_width /2
+        min_width_point = - self.drone_radius
+        max_width_point = self.drone_radius
         return obstacle_drone_posestamped.pose.position.y >= min_width_point and obstacle_drone_posestamped.pose.position.y <= max_width_point
 
     def get_next_waypoint(self):
@@ -131,21 +132,21 @@ class CoolPlanner():
 
     def get_next_setpoint(self, current_posestamped):
         if self.get_dist(current_posestamped.pose, self.get_next_waypoint()) < self.look_ahead:
-            orientation = self.orient_sp(current_posestamped.pose).orientation
+            orientation = self.orient_sp(current_posestamped.pose)
             sp = self.get_next_waypoint()
             sp.orientation = orientation
             rospy.loginfo("continue directly to next waypoint")
             rospy.loginfo(sp)
             return sp
+        rospy.loginfo("setpoint is look ahead")
         # compute a setpoint that is self.look_ahead meters away from the current pose.
         # this is the setpoint that we will try to get to.
         vec = pose2np(self.get_next_waypoint()) - pose2np(current_posestamped.pose)
         vec = vec / np.linalg.norm(vec)
         vec = vec * self.look_ahead
         sp = np2pose(pose2np(current_posestamped.pose) + vec)
-        sp.orientation.w = 1
-        rospy.loginfo("setpoint is look ahead")
-        return self.orient_sp(sp)
+        sp.orientation = self.orient_sp(sp)
+        return sp
 
     def get_current_sp(self):
         # MAIN LOOP
@@ -159,12 +160,10 @@ class CoolPlanner():
         if self.get_dist(current_posestamped.pose, self.current_sp) >= self.sp_radius:
             # rospy.loginfo("Planner: Not at setpoint yet")
             # rospy.loginfo("Planner: Dist: {}".format(self.get_dist(current_posestamped.pose, self.current_sp)))
-            self.current_sp = self.orient_sp(self.current_sp)
             return self.current_sp
         if self.get_yaw_diff(current_posestamped.pose.orientation, self.current_sp.orientation) >= self.yaw_tolerance:
             # log dist and angle diff
             # rospy.loginfo("Planner: Angle: {}".format(self.get_yaw_diff(current_posestamped.pose.orientation, self.current_sp.orientation)))
-            self.current_sp = self.orient_sp(self.current_sp)
             return self.current_sp
 
         # if arrived at the setpoint, increment timer
@@ -185,7 +184,7 @@ class CoolPlanner():
             self.next_waypoint_idx += 1
             self.next_waypoint_idx %= len(WAYPOINTS_POSES.poses)
             rospy.loginfo("turning to face next waypoint")
-            self.current_sp = self.orient_sp(current_posestamped.pose)
+            self.current_sp.orientation = self.orient_sp(current_posestamped.pose)
             return self.current_sp
 
         # check if there's an obstacle. if so, avoid.
@@ -218,6 +217,8 @@ class CoolPlanner():
                         self.current_sp = current_sp
                     else:
                         rospy.logwarn("Planner issue: current_sp is None")
+                    rospy.loginfo("avoiding obstacle, moving to")
+                    rospy.loginfo(self.current_sp.position)
                     return self.current_sp
 
         # if no obstacle, move closer to next waypoint by 1 meter
@@ -232,6 +233,7 @@ def waypoints_cb(msg):
         rospy.loginfo("Got waypoints")
         rospy.loginfo(msg)
         WAYPOINTS_POSES = msg
+        PLANNER.current_sp.orientation = PLANNER.orient_sp(PLANNER.current_sp)
 
 def obstacles_cb(msg):
     global OBSTACLES

@@ -63,6 +63,8 @@ def process_point_cloud():
     # Step 2: Filter out points with depth value less than and greater than thresholds
     try:
         mask = np.logical_and(point_cloud[:,2] > MIN_DIST, point_cloud[:,2] < MAX_DIST)
+        mask = np.logical_and(mask, point_cloud[:,0] > -MAX_WIDTH)
+        mask = np.logical_and(mask, point_cloud[:,0] < MAX_WIDTH)
     except:
         return None
     point_cloud = point_cloud[mask]
